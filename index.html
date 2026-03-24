@@ -6,157 +6,153 @@
     <title>Sistema de Logística Reverso Cloud</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
     <style>
-       <style>
-  /* Cores Gerais e Fundo */
-  body {
-    background-color: #ffffff !important; /* Fundo Branco */
-    color: #333;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  }
+        :root {
+            --primary-blue: #007bff;
+            --danger-red: #ff4d4d;
+            --success-green: #28a745;
+        }
 
-  /* Cabeçalho e Navegação */
-  .navbar {
-    background-color: #007bff !important; /* Azul Profissional */
-  }
+        body {
+            background-color: #ffffff !important;
+            color: #333;
+            font-family: 'Segoe UI', sans-serif;
+        }
 
-  /* Botões de Seleção (Garantia, Nota, Registro) */
-  .btn-check:checked + .btn-outline-primary {
-    background-color: #007bff !important;
-    color: white !important;
-  }
+        /* Tela de Login */
+        #loginScreen {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f8f9fa;
+        }
 
-  /* Status de Alerta (Prejuízo / Perda Total) */
-  .status-critico {
-    background-color: #ff4d4d !important; /* Vermelho Vivo */
-    color: white !important;
-    font-weight: bold;
-    padding: 8px;
-    border-radius: 5px;
-    text-align: center;
-  }
+        .login-box {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 350px;
+        }
 
-  /* Tabelas */
-  .table thead {
-    background-color: #f8f9fa;
-  }
-</style>
+        /* Interface Principal */
+        header {
+            background-color: var(--primary-blue);
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        nav {
+            background: #f1f1f1;
+            padding: 10px;
+            display: flex;
+            gap: 10px;
+            border-bottom: 2px solid #ddd;
+        }
+
+        nav button {
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            background: white;
+        }
+
+        nav button:hover { background: #e0e0e0; }
+
+        .tab-content { display: none; padding: 20px; }
+        .tab-content.active { display: block; }
+
+        /* Cores de Status que você pediu */
+        .status-critico { background-color: var(--danger-red) !important; color: white; }
+        .btn-check:checked + .btn-outline-primary { background-color: var(--primary-blue) !important; color: white !important; }
+        
+        .card { border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; padding: 20px; }
+        .hidden { display: none; }
+        table { width: 100%; margin-top: 15px; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
 
 <div id="loginScreen">
     <div class="login-box">
-        <h2 style="margin-bottom:20px">Sistema Reverso Cloud</h2>
-        <input type="text" id="userLogin" placeholder="Usuário">
-        <input type="password" id="passLogin" placeholder="Senha">
-        <button class="btn btn-save" onclick="realizarLogin()">Acessar Sistema</button>
-        <p style="font-size: 12px; color: #666; margin-top:20px;">Admin: <b>admin</b> / Senha: <b>123</b></p>
+        <h4 class="text-center mb-4">Reverso Cloud</h4>
+        <input type="email" id="userLogin" class="form-control mb-2" placeholder="E-mail">
+        <input type="password" id="passLogin" class="form-control mb-3" placeholder="Senha">
+        <button class="btn btn-primary w-100" onclick="realizarLogin()">Acessar Sistema</button>
     </div>
 </div>
 
-<div id="mainUI">
+<div id="mainUI" class="hidden">
     <header>
-        <span id="welcomeMsg" style="font-weight:bold"></span>
-        <button onclick="logout()" style="background:var(--danger); border:none; color:white; padding:8px 15px; border-radius:4px; cursor:pointer;">Sair</button>
+        <span style="font-weight:bold">Logística Arpex</span>
+        <button onclick="location.reload()" class="btn btn-sm btn-light">Sair</button>
     </header>
 
     <nav>
         <button onclick="showTab('dashboard')">Dashboard</button>
-        <button onclick="showTab('registro')">Registrar Devolução</button>
-        <button onclick="showTab('notas')">Consultar NF / SKU</button>
-        <button onclick="showTab('relatorios')">Relatórios e Backup</button>
-        <button id="btnAdminTab" onclick="showTab('gestaoUsuarios')">Usuários</button>
+        <button onclick="showTab('registro')">Registrar</button>
+        <button onclick="showTab('relatorios')">Histórico</button>
     </nav>
 
     <div class="content">
         <div id="dashboard" class="tab-content active">
-            <h2>Dashboard (Últimos 30 dias)</h2>
-            <div class="dash-cards">
-                <div class="card" style="background: var(--accent);"><h3>Total Mensal</h3><p id="dashTotal">0</p></div>
-                <div class="card" style="background: var(--success);"><h3>Reestoque</h3><p id="dashReestoque">0</p></div>
-                <div class="card" style="background: var(--warning); color:#333"><h3>Garantia</h3><p id="dashGarantia">0</p></div>
-                <div class="card" style="background: var(--danger);"><h3>Perda Total</h3><p id="dashPerda">0</p></div>
+            <h2>Resumo (30 dias)</h2>
+            <div class="row text-center">
+                <div class="col-md-4"><div class="card bg-light"><h3>Total</h3><p id="dashTotal" class="h2">0</p></div></div>
+                <div class="col-md-4"><div class="card bg-success text-white"><h3>Reestoque</h3><p id="dashReestoque" class="h2">0</p></div></div>
+                <div class="col-md-4"><div class="card status-critico"><h3>Perda Total</h3><p id="dashPerda" class="h2">0</p></div></div>
             </div>
-            <div style="max-width: 500px; margin: auto;">
+            <div style="max-width: 400px; margin: auto;">
                 <canvas id="chartPizza"></canvas>
             </div>
         </div>
 
         <div id="registro" class="tab-content">
-            <h2>Novo Registro de Entrada</h2>
-            <div id="areaEscrita">
-                <div style="background:#eef2f5; padding:20px; border-radius:8px; margin-bottom:15px">
-                    <input type="text" id="sku" placeholder="SKU do Produto" oninput="autocompleteSKU()">
-                    <input type="text" id="nome" placeholder="Nome do Produto">
-                    <input type="number" id="custo" placeholder="Preço de Custo (R$)">
+            <div class="card">
+                <h2>Novo Registro</h2>
+                <input type="text" id="sku" class="form-control mb-2" placeholder="SKU do Produto" oninput="autocompleteSKU()">
+                <input type="text" id="nome" class="form-control mb-2" placeholder="Nome do Produto">
+                
+                <label class="mt-2"><b>Destino:</b></label>
+                <div class="btn-group w-100 mt-1 mb-3">
+                    <input type="radio" class="btn-check" name="status" id="st1" value="Reestoque" checked onchange="toggleGarantia()">
+                    <label class="btn btn-outline-primary" for="st1">Reestoque</label>
+                    <input type="radio" class="btn-check" name="status" id="st2" value="Garantia" onchange="toggleGarantia()">
+                    <label class="btn btn-outline-primary" for="st2">Garantia</label>
+                    <input type="radio" class="btn-check" name="status" id="st3" value="Perda Total" onchange="toggleGarantia()">
+                    <label class="btn btn-outline-primary" for="st3">Perda Total</label>
                 </div>
 
-                <label><b>Loja de Origem:</b></label>
-                <select id="loja">
-                    <option value="Loja Principal">Loja Principal</option>
-                    <option value="Loja Secundária">Loja Secundária</option>
-                </select>
-
-                <label><b>Motivo da Devolução:</b></label>
-                <select id="motivo" onchange="verificarOutros()">
-                    <option value="Produto com defeito">Produto com defeito</option>
-                    <option value="Cliente se arrependeu">Cliente se arrependeu</option>
-                    <option value="Não foi possível entregar">Não foi possível entregar</option>
-                    <option value="Produto enviado errado">Produto enviado errado</option>
-                    <option value="Outros">Outros (Especificar)</option>
-                </select>
-                <input type="text" id="motivoManual" class="hidden" placeholder="Descreva o motivo manualmente...">
-
-                <label><b>Destino do Produto:</b></label>
-                <select id="status" onchange="toggleGarantia()">
-                    <option value="Reestoque">Reestoque</option>
-                    <option value="Garantia">Garantia</option>
-                    <option value="Perda Total">Perda Total</option>
-                </select>
-
-                <div id="campoGarantia" class="hidden">
-                    <input type="text" id="notaGarantia" placeholder="Número da Nota Fiscal de Garantia">
+                <div id="campoGarantia" class="hidden mb-2">
+                    <input type="text" id="notaGarantia" class="form-control" placeholder="Número da Nota Fiscal">
                 </div>
 
-                <button id="btnSalvar" class="btn btn-save" onclick="salvarNoSupabase()">Sincronizar com Nuvem</button>
+                <button class="btn btn-success w-100 mt-3" onclick="salvarNoSupabase()">Salvar na Nuvem</button>
             </div>
-            <p id="avisoGerente" class="hidden" style="color:red; text-align:center; font-weight:bold;">Acesso Restrito: Apenas Admins registram dados.</p>
-        </div>
-
-        <div id="notas" class="tab-content">
-            <h2>Consulta Rápida</h2>
-            <input type="text" id="buscaNota" placeholder="Digite NF, SKU ou Nome do Produto..." onkeyup="buscarNota()">
-            <div id="resultadoBusca" style="margin-top:20px"></div>
         </div>
 
         <div id="relatorios" class="tab-content">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
-                <h2>Histórico Geral (Nuvem)</h2>
-                <div style="display:flex; gap:10px">
-                    <button onclick="exportarExcel()" style="background:#1f7244; color:white; border:none; padding:10px 15px; border-radius:5px; cursor:pointer">Exportar Excel</button>
-                </div>
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>Histórico</h2>
+                <button onclick="exportarExcel()" class="btn btn-dark">Exportar Excel</button>
             </div>
-            <div style="overflow-x:auto">
-                <table id="tabelaRelatorio">
-                    <thead><tr><th>Data</th><th>SKU</th><th>Produto</th><th>Loja</th><th>Motivo</th><th>Status</th><th>Custo</th><th>NF</th></tr></thead>
+            <div class="table-responsive">
+                <table>
+                    <thead><tr><th>Data</th><th>SKU</th><th>Produto</th><th>Status</th><th>NF</th></tr></thead>
                     <tbody id="corpoRelatorio"></tbody>
                 </table>
             </div>
-        </div>
-
-        <div id="gestaoUsuarios" class="tab-content">
-            <h2>Gerenciar Acessos de Gerentes</h2>
-            <div style="background:#f8f9fa; padding:20px; border-radius:8px; margin-bottom:20px">
-                <input type="text" id="newUsername" placeholder="Usuário Gerente">
-                <input type="password" id="newPassword" placeholder="Senha">
-                <button class="btn btn-save" onclick="criarGerente()">Adicionar Gerente</button>
-            </div>
-            <table id="tabelaUsuarios">
-                <thead><tr><th>Usuário</th><th>Tipo</th><th>Ação</th></tr></thead>
-                <tbody id="listaUsuarios"></tbody>
-            </table>
         </div>
     </div>
 </div>
@@ -164,38 +160,26 @@
 <script>
     // CONFIGURAÇÃO SUPABASE
     const SUPABASE_URL = "https://felxwahypthusgkspnbo.supabase.co/";
-    const SUPABASE_KEY = "EyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlbHh3YWh5cHRodXNna3NwbmJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNTk2MTYsImV4cCI6MjA4OTkzNTYxNn0.ZwO_RbL2h5vuU-PbgEpKorGWOr_DLJ8fxr-t07pdIJs";
+    const SUPABASE_KEY = "SUA_CHAVE_ANON_AQUI"; // <-- COLE SUA CHAVE AQUI
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let estoque = [];
-    let usuarios = JSON.parse(localStorage.getItem('userLogins')) || [{user: 'admin', pass: '123', tipo: 'admin'}];
-    let userAtual = null;
     let myChart = null;
 
-    async function async function realizarLogin() {
-  const email = document.getElementById('userLogin').value;
-  const password = document.getElementById('passLogin').value;
+    async function realizarLogin() {
+        const email = document.getElementById('userLogin').value;
+        const password = document.getElementById('passLogin').value;
 
-  // Chama o "cérebro" (Supabase) para conferir
-  const { data, error } = await _supabase.auth.signInWithPassword({
-    email: email,
-    password: password,
-  });
+        const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
 
-  if (error) {
-    alert("Ops! Usuário ou senha incorretos.");
-  } else {
-    // Esconde a tela de login e mostra o sistema
-    document.getElementById('telaLogin').classList.add('d-none');
-    document.getElementById('painelPrincipal').classList.remove('d-none');
-  }
-}
+        if (error) {
+            alert("Erro: " + error.message);
+        } else {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainUI').classList.remove('hidden');
             await carregarDados();
-            showTab('dashboard');
-        } else { alert("Usuário ou senha inválidos"); }
+        }
     }
-
-    function logout() { location.reload(); }
 
     async function carregarDados() {
         const { data, error } = await _supabase.from('estoque_reverso').select('*').order('created_at', { ascending: false });
@@ -207,34 +191,22 @@
     }
 
     async function salvarNoSupabase() {
-        const mot = document.getElementById('motivo').value === 'Outros' ? document.getElementById('motivoManual').value : document.getElementById('motivo').value;
+        const statusSel = document.querySelector('input[name="status"]:checked').value;
         const item = {
             sku: document.getElementById('sku').value,
             nome: document.getElementById('nome').value,
-            custo: parseFloat(document.getElementById('custo').value) || 0,
-            loja: document.getElementById('loja').value,
-            motivo: mot,
-            status: document.getElementById('status').value,
+            status: statusSel,
             nota_garantia: document.getElementById('notaGarantia').value || 'N/A'
         };
 
         if(!item.sku) return alert("SKU Obrigatório");
 
         const { error } = await _supabase.from('estoque_reverso').insert([item]);
-        if(error) alert("Erro ao salvar na nuvem: " + error.message);
+        if(error) alert("Erro: " + error.message);
         else {
-            alert("Sincronizado com Sucesso!");
+            alert("Salvo com sucesso!");
             limparCampos();
             await carregarDados();
-        }
-    }
-
-    function autocompleteSKU() {
-        const s = document.getElementById('sku').value;
-        const p = estoque.find(x => x.sku === s);
-        if(p) {
-            document.getElementById('nome').value = p.nome;
-            document.getElementById('custo').value = p.custo;
         }
     }
 
@@ -245,7 +217,6 @@
 
         document.getElementById('dashTotal').innerText = estoque.length;
         document.getElementById('dashReestoque').innerText = r;
-        document.getElementById('dashGarantia').innerText = g;
         document.getElementById('dashPerda').innerText = p;
 
         if(myChart) myChart.destroy();
@@ -253,32 +224,21 @@
             type: 'doughnut',
             data: {
                 labels: ['Reestoque', 'Garantia', 'Perda'],
-                datasets: [{ data: [r, g, p], backgroundColor: ['#27ae60', '#f1c40f', '#e74c3c'] }]
+                datasets: [{ data: [r, g, p], backgroundColor: ['#28a745', '#007bff', '#ff4d4d'] }]
             }
         });
     }
 
     function atualizarTabela() {
         document.getElementById('corpoRelatorio').innerHTML = estoque.map(p => `
-            <tr>
+            <tr class="${p.status === 'Perda Total' ? 'status-critico' : ''}">
                 <td>${new Date(p.created_at).toLocaleDateString()}</td>
                 <td>${p.sku}</td>
                 <td>${p.nome}</td>
-                <td>${p.loja}</td>
-                <td>${p.motivo}</td>
                 <td>${p.status}</td>
-                <td>R$ ${p.custo}</td>
                 <td>${p.nota_garantia}</td>
             </tr>
         `).join('');
-    }
-
-    function buscarNota() {
-        const t = document.getElementById('buscaNota').value.toLowerCase();
-        const f = estoque.filter(x => x.sku.toLowerCase().includes(t) || x.nota_garantia.toLowerCase().includes(t) || x.nome.toLowerCase().includes(t));
-        let h = '<table><thead><tr><th>SKU</th><th>Produto</th><th>NF</th><th>Status</th></tr></thead>';
-        f.forEach(p => h += `<tr><td>${p.sku}</td><td>${p.nome}</td><td>${p.nota_garantia}</td><td>${p.status}</td></tr>`);
-        document.getElementById('resultadoBusca').innerHTML = h + '</table>';
     }
 
     function showTab(id) {
@@ -286,31 +246,20 @@
         document.getElementById(id).classList.add('active');
     }
 
-    function verificarOutros() { document.getElementById('motivoManual').classList.toggle('hidden', document.getElementById('motivo').value !== 'Outros'); }
-    function toggleGarantia() { document.getElementById('campoGarantia').classList.toggle('hidden', document.getElementById('status').value !== 'Garantia'); }
-    function limparCampos() { ['sku', 'nome', 'custo', 'motivoManual', 'notaGarantia'].forEach(i => document.getElementById(i).value = ''); }
-
-    function criarGerente() {
-        const u = document.getElementById('newUsername').value;
-        const p = document.getElementById('newPassword').value;
-        if(!u || !p) return;
-        usuarios.push({user: u, pass: p, tipo: 'gerente'});
-        localStorage.setItem('userLogins', JSON.stringify(usuarios));
-        alert("Gerente Criado!");
-        renderUsuarios();
+    function toggleGarantia() {
+        const status = document.querySelector('input[name="status"]:checked').value;
+        document.getElementById('campoGarantia').classList.toggle('hidden', status !== 'Garantia');
     }
 
-    function renderUsuarios() {
-        document.getElementById('listaUsuarios').innerHTML = usuarios.map((u, i) => `
-            <tr><td>${u.user}</td><td>${u.tipo}</td><td>${u.tipo !== 'admin' ? `<button onclick="usuarios.splice(${i},1);localStorage.setItem('userLogins',JSON.stringify(usuarios));renderUsuarios()">Remover</button>` : '-'}</td></tr>
-        `).join('');
+    function limparCampos() {
+        ['sku', 'nome', 'notaGarantia'].forEach(i => document.getElementById(i).value = '');
     }
 
     function exportarExcel() {
         const ws = XLSX.utils.json_to_sheet(estoque);
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "EstoqueCloud");
-        XLSX.writeFile(wb, "Backup_Estoque_Nuvem.xlsx");
+        XLSX.utils.book_append_sheet(wb, ws, "Estoque");
+        XLSX.writeFile(wb, "Relatorio_Reverso.xlsx");
     }
 </script>
 </body>
