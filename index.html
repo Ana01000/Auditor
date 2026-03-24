@@ -3,275 +3,165 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auditor de Estoque Reverso</title>
-    
+    <title>Auditor Pro - Gestão de Acesso</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
     <style>
-        :root { --primary: #0056ff; --bg: #f8fafc; --radius: 16px; }
+        :root { --primary: #0056ff; --bg: #f8fafc; }
         body { background-color: var(--bg); font-family: 'Inter', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        
-        .navbar { background: white !important; border-bottom: 2px solid #eef2f7; padding: 12px 25px; display: flex; justify-content: space-between; align-items: center; }
-        .navbar-brand { color: var(--primary) !important; font-weight: 800; font-size: 19px; }
-        .user-badge { font-size: 12px; font-weight: 600; color: #64748b; background: #f1f5f9; padding: 5px 12px; border-radius: 20px; }
-
-        .nav-tabs-custom { background: white; display: flex; padding: 10px 20px; gap: 8px; border-bottom: 1px solid #e2e8f0; overflow-x: auto; }
-        .nav-link-custom { padding: 10px 18px; border-radius: 10px; cursor: pointer; color: #64748b; font-size: 13px; font-weight: 600; transition: 0.2s; white-space: nowrap; }
-        .nav-link-custom.active { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(0, 86, 255, 0.2); }
-        
+        .navbar { background: white; border-bottom: 2px solid #eef2f7; padding: 12px 25px; display: flex; justify-content: space-between; }
+        .nav-tabs-custom { background: white; display: flex; padding: 10px 20px; gap: 8px; border-bottom: 1px solid #e2e8f0; }
+        .nav-link-custom { padding: 10px 18px; border-radius: 10px; cursor: pointer; color: #64748b; font-size: 13px; font-weight: 600; }
+        .nav-link-custom.active { background: var(--primary); color: white; }
         .tab-content { display: none; padding: 25px; flex: 1; overflow-y: auto; }
         .tab-content.active { display: block; }
-
-        .card-custom { background: white; border-radius: var(--radius); padding: 24px; box-shadow: 0 2px 15px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; margin-bottom: 20px; }
-        .form-label { font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 5px; }
-        .form-control { border-radius: 10px; padding: 10px; border: 1px solid #e2e8f0; font-size: 14px; }
-        
-        #loginScreen { height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--primary); position: fixed; width: 100%; z-index: 9999; }
+        .card-custom { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 2px 15px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; margin-bottom: 20px; }
         .hidden { display: none !important; }
-        
-        .alert-row { background-color: #fff1f2 !important; color: #e11d48 !important; }
-        .btn-filter { font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; color: #64748b; }
-        .btn-filter.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .btn-primary { background: var(--primary); border: none; font-weight: 700; }
+        .badge-role { font-size: 10px; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; margin-left: 10px; }
     </style>
 </head>
 <body>
 
-<div id="loginScreen" class="hidden">
-    <div class="bg-white p-5 shadow-lg" style="width: 380px; border-radius: 24px;">
+<div id="loginScreen">
+    <div class="bg-white p-5 shadow-lg" style="width: 380px; border-radius: 24px; margin: 100px auto;">
         <h4 class="fw-bold text-primary text-center mb-4">Acesso Auditor</h4>
-        <input type="email" id="userLogin" class="form-control mb-3" placeholder="admin@exemplo.com">
-        <input type="password" id="passLogin" class="form-control mb-4" placeholder="••••••••">
-        <button class="btn btn-primary w-100 py-3" onclick="realizarLogin()">ENTRAR NO SISTEMA</button>
+        <input type="email" id="userLogin" class="form-control mb-3" placeholder="E-mail">
+        <input type="password" id="passLogin" class="form-control mb-4" placeholder="Senha">
+        <button class="btn btn-primary w-100 py-3" onclick="realizarLogin()">ENTRAR</button>
     </div>
 </div>
 
 <div id="mainUI" class="hidden">
     <nav class="navbar">
-        <span class="navbar-brand">Auditor de Estoque Reverso</span>
-        <span class="user-badge" id="userNameTop">Verificando...</span>
+        <span class="fw-bold text-primary">AUDITOR DE ESTOQUE <span id="roleBadge" class="badge bg-secondary badge-role">Gerente</span></span>
+        <span id="userNameTop" class="text-muted small">---</span>
     </nav>
 
     <div class="nav-tabs-custom">
         <div class="nav-link-custom active" onclick="showTab('dashboard', this)">Dashboard</div>
         <div class="nav-link-custom" onclick="showTab('registro', this)">Registro</div>
-        <div class="nav-link-custom" onclick="showTab('garantias', this)">Gestão de Garantias</div>
-        <div class="nav-link-custom" onclick="showTab('relatorios', this)">Relatórios & Histórico</div>
-        <div class="nav-link-custom" onclick="showTab('config', this)">Ajustes</div>
+        <div class="nav-link-custom" onclick="showTab('garantias', this)">Garantias</div>
+        <div class="nav-link-custom" onclick="showTab('config', this)">Meu Perfil</div>
         <div class="nav-link-custom text-danger ms-auto" onclick="logout()">Sair</div>
     </div>
 
-    <div id="dashboard" class="tab-content active">
-        <div class="row g-3 mb-4 text-center">
-            <div class="col-md-3"><div class="card-custom"><h6>Total</h6><h2 id="dashTotal">0</h2></div></div>
-            <div class="col-md-3"><div class="card-custom text-success"><h6>Reestoque</h6><h2 id="dashReestoque">0</h2></div></div>
-            <div class="col-md-3"><div class="card-custom text-warning"><h6>Garantia</h6><h2 id="dashGarantia">0</h2></div></div>
-            <div class="col-md-3"><div class="card-custom text-danger"><h6>Perda</h6><h2 id="dashPerda">0</h2></div></div>
-        </div>
-        <div class="card-custom" style="height: 350px;"><canvas id="mainChart"></canvas></div>
-    </div>
-
     <div id="registro" class="tab-content">
-        <div class="card-custom mx-auto" style="max-width: 700px;">
-            <h5 class="fw-bold mb-4 text-primary">Novo Registro</h5>
-            <div class="row g-3">
-                <div class="col-md-6"><label class="form-label">SKU</label><input type="text" id="sku" class="form-control" onblur="autocompleteSKU()"></div>
-                <div class="col-md-6"><label class="form-label">Produto</label><input type="text" id="nome" class="form-control"></div>
-                <div class="col-md-6"><label class="form-label">Fornecedor</label><input type="text" id="fornecedor" class="form-control"></div>
-                <div class="col-md-6"><label class="form-label">NF Garantia</label><input type="text" id="notaGarantia" class="form-control"></div>
-                <div class="col-md-4"><label class="form-label">Custo (R$)</label><input type="number" id="custo" class="form-control" step="0.01"></div>
-                <div class="col-md-8"><label class="form-label">Status Final</label>
-                    <select id="statusSel" class="form-select form-control">
-                        <option value="Reestoque">Reestoque</option>
-                        <option value="Garantia">Garantia</option>
-                        <option value="Perda Total">Perda Total</option>
-                    </select>
-                </div>
-            </div>
-            <button class="btn btn-primary w-100 mt-4" id="btnSalvar" onclick="salvarRegistro()">SALVAR REGISTRO</button>
-        </div>
-    </div>
-
-    <div id="relatorios" class="tab-content">
-        <div class="card-custom">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5 class="fw-bold m-0">Histórico de Movimentações</h5>
-                <div class="d-flex gap-2">
-                    <button class="btn-filter active" onclick="filtrarHistórico('TUDO', this)">TUDO</button>
-                    <button class="btn-filter" onclick="filtrarHistórico('PENDENTE', this)">PENDENTE RETORNO</button>
-                    <button class="btn-filter" onclick="filtrarHistórico('PERDA', this)">ALERTA PERDAS</button>
-                </div>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead><tr><th>Data</th><th>SKU</th><th>Fornecedor</th><th>Custo</th><th>Status</th><th>Ações</th></tr></thead>
-                    <tbody id="corpoHistórico"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <div id="garantias" class="tab-content">
-        <div class="card-custom">
-            <h5 class="fw-bold mb-4">Rastreio de Notas</h5>
-            <div class="input-group mb-4" style="max-width: 400px;">
-                <input type="text" id="searchNF" class="form-control" placeholder="NF de Garantia...">
-                <button class="btn btn-primary" onclick="buscarNF()">BUSCAR</button>
-            </div>
-            <div id="areaResultGarantia" class="hidden">
-                 <div class="alert bg-light border d-flex justify-content-between align-items-center mb-3">
-                    <span id="txtInfoGarantia" class="fw-bold">Nota: ---</span>
-                    <button class="btn btn-sm btn-success px-4 rounded-pill" onclick="darBaixaGarantia()">Confirmar Retorno</button>
-                 </div>
-                 <table class="table table-sm"><tbody id="listaItensGarantia"></tbody></table>
-            </div>
+        <div class="card-custom mx-auto" style="max-width: 600px;">
+            <h5 class="fw-bold mb-4">Entrada de Dados</h5>
+            <div id="msgBloqueio" class="alert alert-warning d-none">Seu perfil de <b>Gerente</b> permite apenas visualização.</div>
+            <input type="text" id="sku" class="form-control mb-3" placeholder="SKU">
+            <input type="text" id="nome" class="form-control mb-3" placeholder="Nome do Produto">
+            <button class="btn btn-primary w-100" id="btnSalvar" onclick="salvarRegistro()">SALVAR REGISTRO</button>
         </div>
     </div>
 
     <div id="config" class="tab-content">
-        <div class="card-custom mx-auto" style="max-width: 500px;">
-            <h5 class="fw-bold mb-4">Configurações</h5>
-            <label class="form-label">Seu E-mail</label>
-            <input type="text" id="perfilEmail" class="form-control mb-4" readonly>
-            <div id="areaAdmin">
-                <h6 class="fw-bold text-primary">Novo Acesso Gerente</h6>
-                <input type="email" id="newEmail" class="form-control mb-2" placeholder="E-mail">
-                <input type="password" id="newPass" class="form-control mb-3" placeholder="Senha">
-                <button class="btn btn-dark w-100" onclick="cadastrarGerente()">CRIAR GERENTE</button>
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="card-custom">
+                    <h5 class="fw-bold mb-4">Meus Dados</h5>
+                    <label class="small fw-bold">NOME</label>
+                    <input type="text" id="perfilNome" class="form-control mb-3">
+                    <button class="btn btn-outline-primary w-100" onclick="atualizarNome()">ATUALIZAR NOME</button>
+                    
+                    <hr class="my-4">
+                    
+                    <h5 class="fw-bold mb-3">Segurança</h5>
+                    <label class="small fw-bold">NOVA SENHA</label>
+                    <input type="password" id="newPass" class="form-control mb-3" placeholder="Mínimo 6 caracteres">
+                    <button class="btn btn-dark w-100" onclick="alterarSenha()">ALTERAR MINHA SENHA</button>
+                </div>
+            </div>
+            <div class="col-md-6 admin-only hidden">
+                <div class="card-custom border-primary">
+                    <h5 class="fw-bold mb-4">Criar Novo Gerente</h5>
+                    <input type="email" id="novoEmail" class="form-control mb-2" placeholder="E-mail do gerente">
+                    <input type="password" id="novoPass" class="form-control mb-3" placeholder="Senha inicial">
+                    <button class="btn btn-primary w-100" onclick="criarGerente()">CADASTRAR</button>
+                </div>
             </div>
         </div>
     </div>
+
+    <div id="dashboard" class="tab-content active"><div class="card-custom">Dashboard em carregamento...</div></div>
+    <div id="garantias" class="tab-content"><div class="card-custom">Consulte as NFs no banco de dados.</div></div>
 </div>
 
 <script>
     const SUPABASE_URL = "https://felxwahypthusgkspnbo.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlbHh3YWh5cHRodXNna3NwbmJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNTk2MTYsImV4cCI6MjA4OTkzNTYxNn0.ZwO_RbL2h5vuU-PbgEpKorGWOr_DLJ8fxr-t07pdIJs";
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    let estoque = []; let myChart = null;
+
+    let usuarioAtual = null;
+    let perfilAtual = null;
 
     async function checarSessao() {
         const { data: { session } } = await _supabase.auth.getSession();
-        if (session) liberarAcesso(session.user); else document.getElementById('loginScreen').classList.remove('hidden');
+        if (session) carregarPerfil(session.user);
     }
     checarSessao();
 
-    function liberarAcesso(user) {
+    async function realizarLogin() {
+        const email = document.getElementById('userLogin').value;
+        const password = document.getElementById('passLogin').value;
+        const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+        if (error) alert("Erro: " + error.message); else carregarPerfil(data.user);
+    }
+
+    async function carregarPerfil(user) {
+        usuarioAtual = user;
+        const { data } = await _supabase.from('perfis').select('*').eq('id', user.id).single();
+        perfilAtual = data;
+
         document.getElementById('loginScreen').classList.add('hidden');
         document.getElementById('mainUI').classList.remove('hidden');
-        document.getElementById('userNameTop').innerText = user.email;
-        document.getElementById('perfilEmail').value = user.email;
-        if(user.email !== 'club.anatiradentes@gmail.com') document.getElementById('areaAdmin').classList.add('hidden');
-        carregarDados();
-    }
-
-    async function carregarDados() {
-        const { data } = await _supabase.from('estoque_reverso').select('*').order('created_at', { ascending: false });
-        if(data) { estoque = data; atualizarDashboard(); renderizarHistórico(estoque); }
-    }
-
-    // 1. AUTOCOMPLETE (CONSERTEI)
-    function autocompleteSKU() {
-        const skuDigitado = document.getElementById('sku').value.trim();
-        if(!skuDigitado) return;
-        const repetido = estoque.find(i => i.sku === skuDigitado);
-        if(repetido) {
-            document.getElementById('nome').value = repetido.nome || '';
-            document.getElementById('fornecedor').value = repetido.fornecedor || '';
-            document.getElementById('custo').value = repetido.custo || 0;
+        document.getElementById('userNameTop').innerText = data?.nome || user.email;
+        document.getElementById('perfilNome').value = data?.nome || '';
+        
+        const badge = document.getElementById('roleBadge');
+        badge.innerText = data?.cargo || 'gerente';
+        
+        // TRAVA DE SEGURANÇA: Bloqueia botões se for gerente
+        if (data?.cargo !== 'admin' && user.email !== 'club.anatiradentes@gmail.com') {
+            document.getElementById('btnSalvar').disabled = true;
+            document.getElementById('msgBloqueio').classList.remove('d-none');
+            badge.className = "badge bg-secondary badge-role";
+        } else {
+            document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+            badge.className = "badge bg-primary badge-role";
         }
     }
 
-    // 2. FILTROS E 3. ALERTA DE CUSTO (RELATÓRIOS)
-    function renderizarHistórico(lista) {
-        const corpo = document.getElementById('corpoHistórico');
-        corpo.innerHTML = lista.map(i => {
-            const isAlerta = (i.status === 'Perda Total' && i.custo > 200);
-            return `
-                <tr class="${isAlerta ? 'alert-row' : ''}">
-                    <td>${new Date(i.created_at).toLocaleDateString()}</td>
-                    <td><b>${i.sku}</b></td>
-                    <td>${i.fornecedor || '-'}</td>
-                    <td>R$ ${i.custo?.toFixed(2)}</td>
-                    <td><span class="badge ${i.status==='Reestoque'?'bg-success':'bg-secondary'}">${i.status}</span></td>
-                    <td>${isAlerta ? '⚠️ Perda Alta' : (i.retornado ? '✅' : '⏳')}</td>
-                </tr>
-            `;
-        }).join('');
+    async function alterarSenha() {
+        const novaSenha = document.getElementById('newPass').value;
+        if(novaSenha.length < 6) return alert("Senha muito curta!");
+        const { error } = await _supabase.auth.updateUser({ password: novaSenha });
+        if(error) alert("Erro ao mudar senha."); else alert("Senha alterada com sucesso!");
     }
 
-    function filtrarHistórico(tipo, el) {
-        document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
-        el.classList.add('active');
-        if(tipo === 'TUDO') renderizarHistórico(estoque);
-        if(tipo === 'PENDENTE') renderizarHistórico(estoque.filter(i => i.status === 'Garantia' && !i.retornado));
-        if(tipo === 'PERDA') renderizarHistórico(estoque.filter(i => i.status === 'Perda Total' && i.custo > 200));
+    async function atualizarNome() {
+        const novoNome = document.getElementById('perfilNome').value;
+        const { error } = await _supabase.from('perfis').upsert({ id: usuarioAtual.id, nome: novoNome });
+        if(error) alert("Erro ao salvar nome."); else { alert("Nome atualizado!"); location.reload(); }
     }
 
-    async function realizarLogin() {
-        const { data, error } = await _supabase.auth.signInWithPassword({ 
-            email: document.getElementById('userLogin').value, 
-            password: document.getElementById('passLogin').value 
-        });
-        if (error) alert("Erro!"); else liberarAcesso(data.user);
-    }
-
-    async function salvarRegistro() {
-        const btn = document.getElementById('btnSalvar');
-        btn.disabled = true;
-        const { error } = await _supabase.from('estoque_reverso').insert([{
-            sku: document.getElementById('sku').value,
-            nome: document.getElementById('nome').value,
-            custo: parseFloat(document.getElementById('custo').value) || 0,
-            fornecedor: document.getElementById('fornecedor').value,
-            status: document.getElementById('statusSel').value,
-            nota_garantia: document.getElementById('notaGarantia').value,
-            retornado: false
-        }]);
-        if(!error) { alert("Salvo!"); carregarDados(); limparForm(); showTab('dashboard', document.querySelector('.nav-link-custom')); }
-        btn.disabled = false;
-    }
-
-    function atualizarDashboard() {
-        const r = estoque.filter(x => x.status === 'Reestoque').length;
-        const g = estoque.filter(x => x.status === 'Garantia').length;
-        const p = estoque.filter(x => x.status === 'Perda Total').length;
-        document.getElementById('dashTotal').innerText = estoque.length;
-        document.getElementById('dashReestoque').innerText = r;
-        document.getElementById('dashGarantia').innerText = g;
-        document.getElementById('dashPerda').innerText = p;
-
-        if (myChart) myChart.destroy();
-        myChart = new Chart(document.getElementById('mainChart').getContext('2d'), {
-            type: 'bar',
-            data: { labels: ['Reestoque', 'Garantia', 'Perda'], datasets: [{ data: [r, g, p], backgroundColor: ['#10b981', '#f59e0b', '#ef4444'] }] },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
+    async function criarGerente() {
+        const email = document.getElementById('novoEmail').value;
+        const password = document.getElementById('novoPass').value;
+        // Nota: O cadastro aqui cria no Auth, você precisará inserir manualmente na tabela 'perfis' via Dashboard ou Trigger.
+        const { data, error } = await _supabase.auth.signUp({ email, password });
+        if(!error) alert("Gerente criado! Peça para ele logar.");
     }
 
     function showTab(id, el) {
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.nav-link-custom').forEach(l => l.classList.remove('active'));
-        document.getElementById(id).classList.add('active'); el.classList.add('active');
+        document.getElementById(id).classList.add('active');
+        el.classList.add('active');
     }
 
-    async function buscarNF() {
-        const nf = document.getElementById('searchNF').value;
-        const itens = estoque.filter(i => i.nota_garantia === nf);
-        if(itens.length === 0) return alert("Nada!");
-        document.getElementById('areaResultGarantia').classList.remove('hidden');
-        document.getElementById('txtInfoGarantia').innerText = "NF: " + nf;
-        document.getElementById('listaItensGarantia').innerHTML = itens.map(i => `<tr><td>${i.sku}</td><td>${i.nome}</td></tr>`).join('');
-    }
-
-    async function darBaixaGarantia() {
-        const nf = document.getElementById('searchNF').value;
-        await _supabase.from('estoque_reverso').update({ retornado: true }).eq('nota_garantia', nf);
-        alert("Baixado!"); carregarDados();
-    }
-
-    function limparForm() { ['sku','nome','fornecedor','notaGarantia','custo'].forEach(id => document.getElementById(id).value = ''); }
     async function logout() { await _supabase.auth.signOut(); location.reload(); }
 </script>
 </body>
