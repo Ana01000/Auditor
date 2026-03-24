@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Logística Reverso Cloud</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root { --primary: #1a252f; --secondary: #2c3e50; --accent: #3498db; --danger: #e74c3c; --success: #27ae60; --light: #f4f7f6; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--light); }
+        #loginScreen { display: flex; justify-content: center; align-items: center; height: 100vh; background: var(--primary); }
+        .login-box { background: white; padding: 40px; border-radius: 12px; width: 350px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        #mainUI { display: none; }
+        header { background: var(--primary); color: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; }
+        nav { background: var(--secondary); display: flex; flex-wrap: wrap; }
+        nav button { background: none; border: none; color: white; padding: 15px 20px; cursor: pointer; font-weight: 500; transition: 0.3s; }
+        nav button:hover { background: var(--accent); }
+        .content { padding: 25px; max-width: 1200px; margin: auto; }
+        .tab-content { display: none; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .active { display: block; }
+        .dash-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .card { padding: 25px; border-radius: 10px; color: white; text-align: center; }
+        input, select, .btn { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 15px; }
+        .btn-save { background: var(--success); color: white; border: none; cursor: pointer; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+        th, td { border: 1px solid #eee; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; color: var(--secondary); }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div id="loginScreen">
+    <div class="login-box">
+        <h2 style="margin-bottom:20px">Sistema Reverso Cloud</h2>
+        <input type="text" id="userLogin" placeholder="Usuário">
+        <input type="password" id="passLogin" placeholder="Senha">
+        <button class="btn btn-save" onclick="realizarLogin()">Acessar Sistema</button>
+        <p style="font-size: 12px; color: #666; margin-top:20px;">Admin: <b>admin</b> / Senha: <b>123</b></p>
+    </div>
+</div>
+
+<div id="mainUI">
+    <header>
+        <span id="welcomeMsg" style="font-weight:bold"></span>
+        <button onclick="logout()" style="background:var(--danger); border:none; color:white; padding:8px 15px; border-radius:4px; cursor:pointer;">Sair</button>
+    </header>
+
+    <nav>
+        <button onclick="showTab('dashboard')">Dashboard</button>
+        <button onclick="showTab('registro')">Registrar Devolução</button>
+        <button onclick="showTab('notas')">Consultar NF / SKU</button>
+        <button onclick="showTab('relatorios')">Relatórios e Backup</button>
+        <button id="btnAdminTab" onclick="showTab('gestaoUsuarios')">Usuários</button>
+    </nav>
+
+    <div class="content">
+        <div id="dashboard" class="tab-content active">
+            <h2>Dashboard (Últimos 30 dias)</h2>
+            <div class="dash-cards">
+                <div class="card" style="background: var(--accent);"><h3>Total Mensal</h3><p id="dashTotal">0</p></div>
+                <div class="card" style="background: var(--success);"><h3>Reestoque</h3><p id="dashReestoque">0</p></div>
+                <div class="card" style="background: var(--warning); color:#333"><h3>Garantia</h3><p id="dashGarantia">0</p></div>
+                <div class="card" style="background: var(--danger);"><h3>Perda Total</h3><p id="dashPerda">0</p></div>
+            </div>
+            <div style="max-width: 500px; margin: auto;">
+                <canvas id="chartPizza"></canvas>
+            </div>
+        </div>
+
+        <div id="registro" class="tab-content">
+            <h2>Novo Registro de Entrada</h2>
+            <div id="areaEscrita">
+                <div style="background:#eef2f5; padding:20px; border-radius:8px; margin-bottom:15px">
+                    <input type="text" id="sku" placeholder="SKU do Produto" oninput="autocompleteSKU()">
+                    <input type="text" id="nome" placeholder="Nome do Produto">
+                    <input type="number" id="custo" placeholder="Preço de Custo (R$)">
+                </div>
+
+                <label><b>Loja de Origem:</b></label>
+                <select id="loja">
+                    <option value="Loja Principal">Loja Principal</option>
+                    <option value="Loja Secundária">Loja Secundária</option>
+                </select>
+
+                <label><b>Motivo da Devolução:</b></label>
+                <select id="motivo" onchange="verificarOutros()">
+                    <option value="Produto com defeito">Produto com defeito</option>
+                    <option value="Cliente se arrependeu">Cliente se arrependeu</option>
+                    <option value="Não foi possível entregar">Não foi possível entregar</option>
+                    <option value="Produto enviado errado">Produto enviado errado</option>
+                    <option value="Outros">Outros (Especificar)</option>
+                </select>
+                <input type="text" id="motivoManual" class="hidden" placeholder="Descreva o motivo manualmente...">
+
+                <label><b>Destino do Produto:</b></label>
+                <select id="status" onchange="toggleGarantia()">
+                    <option value="Reestoque">Reestoque</option>
+                    <option value="Garantia">Garantia</option>
+                    <option value="Perda Total">Perda Total</option>
+                </select>
+
+                <div id="campoGarantia" class="hidden">
+                    <input type="text" id="notaGarantia" placeholder="Número da Nota Fiscal de Garantia">
+                </div>
+
+                <button id="btnSalvar" class="btn btn-save" onclick="salvarNoSupabase()">Sincronizar com Nuvem</button>
+            </div>
+            <p id="avisoGerente" class="hidden" style="color:red; text-align:center; font-weight:bold;">Acesso Restrito: Apenas Admins registram dados.</p>
+        </div>
+
+        <div id="notas" class="tab-content">
+            <h2>Consulta Rápida</h2>
+            <input type="text" id="buscaNota" placeholder="Digite NF, SKU ou Nome do Produto..." onkeyup="buscarNota()">
+            <div id="resultadoBusca" style="margin-top:20px"></div>
+        </div>
+
+        <div id="relatorios" class="tab-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
+                <h2>Histórico Geral (Nuvem)</h2>
+                <div style="display:flex; gap:10px">
+                    <button onclick="exportarExcel()" style="background:#1f7244; color:white; border:none; padding:10px 15px; border-radius:5px; cursor:pointer">Exportar Excel</button>
+                </div>
+            </div>
+            <div style="overflow-x:auto">
+                <table id="tabelaRelatorio">
+                    <thead><tr><th>Data</th><th>SKU</th><th>Produto</th><th>Loja</th><th>Motivo</th><th>Status</th><th>Custo</th><th>NF</th></tr></thead>
+                    <tbody id="corpoRelatorio"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="gestaoUsuarios" class="tab-content">
+            <h2>Gerenciar Acessos de Gerentes</h2>
+            <div style="background:#f8f9fa; padding:20px; border-radius:8px; margin-bottom:20px">
+                <input type="text" id="newUsername" placeholder="Usuário Gerente">
+                <input type="password" id="newPassword" placeholder="Senha">
+                <button class="btn btn-save" onclick="criarGerente()">Adicionar Gerente</button>
+            </div>
+            <table id="tabelaUsuarios">
+                <thead><tr><th>Usuário</th><th>Tipo</th><th>Ação</th></tr></thead>
+                <tbody id="listaUsuarios"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // CONFIGURAÇÃO SUPABASE
+    const SUPABASE_URL = "https://felxwahypthusgkspnbo.supabase.co/";
+    const SUPABASE_KEY = "EyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlbHh3YWh5cHRodXNna3NwbmJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNTk2MTYsImV4cCI6MjA4OTkzNTYxNn0.ZwO_RbL2h5vuU-PbgEpKorGWOr_DLJ8fxr-t07pdIJs";
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let estoque = [];
+    let usuarios = JSON.parse(localStorage.getItem('userLogins')) || [{user: 'admin', pass: '123', tipo: 'admin'}];
+    let userAtual = null;
+    let myChart = null;
+
+    async function realizarLogin() {
+        const u = document.getElementById('userLogin').value;
+        const p = document.getElementById('passLogin').value;
+        const achou = usuarios.find(x => x.user === u && x.pass === p);
+
+        if(achou) {
+            userAtual = achou;
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainUI').style.display = 'block';
+            document.getElementById('welcomeMsg').innerText = `Operador: ${u.toUpperCase()}`;
+            
+            const isAdmin = achou.tipo === 'admin';
+            document.getElementById('btnAdminTab').style.display = isAdmin ? 'block' : 'none';
+            document.getElementById('areaEscrita').classList.toggle('hidden', !isAdmin);
+            document.getElementById('avisoGerente').classList.toggle('hidden', isAdmin);
+            
+            await carregarDados();
+            showTab('dashboard');
+        } else { alert("Usuário ou senha inválidos"); }
+    }
+
+    function logout() { location.reload(); }
+
+    async function carregarDados() {
+        const { data, error } = await _supabase.from('estoque_reverso').select('*').order('created_at', { ascending: false });
+        if(data) {
+            estoque = data;
+            atualizarTabela();
+            atualizarDashboard();
+        }
+    }
+
+    async function salvarNoSupabase() {
+        const mot = document.getElementById('motivo').value === 'Outros' ? document.getElementById('motivoManual').value : document.getElementById('motivo').value;
+        const item = {
+            sku: document.getElementById('sku').value,
+            nome: document.getElementById('nome').value,
+            custo: parseFloat(document.getElementById('custo').value) || 0,
+            loja: document.getElementById('loja').value,
+            motivo: mot,
+            status: document.getElementById('status').value,
+            nota_garantia: document.getElementById('notaGarantia').value || 'N/A'
+        };
+
+        if(!item.sku) return alert("SKU Obrigatório");
+
+        const { error } = await _supabase.from('estoque_reverso').insert([item]);
+        if(error) alert("Erro ao salvar na nuvem: " + error.message);
+        else {
+            alert("Sincronizado com Sucesso!");
+            limparCampos();
+            await carregarDados();
+        }
+    }
+
+    function autocompleteSKU() {
+        const s = document.getElementById('sku').value;
+        const p = estoque.find(x => x.sku === s);
+        if(p) {
+            document.getElementById('nome').value = p.nome;
+            document.getElementById('custo').value = p.custo;
+        }
+    }
+
+    function atualizarDashboard() {
+        const r = estoque.filter(x => x.status === 'Reestoque').length;
+        const g = estoque.filter(x => x.status === 'Garantia').length;
+        const p = estoque.filter(x => x.status === 'Perda Total').length;
+
+        document.getElementById('dashTotal').innerText = estoque.length;
+        document.getElementById('dashReestoque').innerText = r;
+        document.getElementById('dashGarantia').innerText = g;
+        document.getElementById('dashPerda').innerText = p;
+
+        if(myChart) myChart.destroy();
+        myChart = new Chart(document.getElementById('chartPizza'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Reestoque', 'Garantia', 'Perda'],
+                datasets: [{ data: [r, g, p], backgroundColor: ['#27ae60', '#f1c40f', '#e74c3c'] }]
+            }
+        });
+    }
+
+    function atualizarTabela() {
+        document.getElementById('corpoRelatorio').innerHTML = estoque.map(p => `
+            <tr>
+                <td>${new Date(p.created_at).toLocaleDateString()}</td>
+                <td>${p.sku}</td>
+                <td>${p.nome}</td>
+                <td>${p.loja}</td>
+                <td>${p.motivo}</td>
+                <td>${p.status}</td>
+                <td>R$ ${p.custo}</td>
+                <td>${p.nota_garantia}</td>
+            </tr>
+        `).join('');
+    }
+
+    function buscarNota() {
+        const t = document.getElementById('buscaNota').value.toLowerCase();
+        const f = estoque.filter(x => x.sku.toLowerCase().includes(t) || x.nota_garantia.toLowerCase().includes(t) || x.nome.toLowerCase().includes(t));
+        let h = '<table><thead><tr><th>SKU</th><th>Produto</th><th>NF</th><th>Status</th></tr></thead>';
+        f.forEach(p => h += `<tr><td>${p.sku}</td><td>${p.nome}</td><td>${p.nota_garantia}</td><td>${p.status}</td></tr>`);
+        document.getElementById('resultadoBusca').innerHTML = h + '</table>';
+    }
+
+    function showTab(id) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    function verificarOutros() { document.getElementById('motivoManual').classList.toggle('hidden', document.getElementById('motivo').value !== 'Outros'); }
+    function toggleGarantia() { document.getElementById('campoGarantia').classList.toggle('hidden', document.getElementById('status').value !== 'Garantia'); }
+    function limparCampos() { ['sku', 'nome', 'custo', 'motivoManual', 'notaGarantia'].forEach(i => document.getElementById(i).value = ''); }
+
+    function criarGerente() {
+        const u = document.getElementById('newUsername').value;
+        const p = document.getElementById('newPassword').value;
+        if(!u || !p) return;
+        usuarios.push({user: u, pass: p, tipo: 'gerente'});
+        localStorage.setItem('userLogins', JSON.stringify(usuarios));
+        alert("Gerente Criado!");
+        renderUsuarios();
+    }
+
+    function renderUsuarios() {
+        document.getElementById('listaUsuarios').innerHTML = usuarios.map((u, i) => `
+            <tr><td>${u.user}</td><td>${u.tipo}</td><td>${u.tipo !== 'admin' ? `<button onclick="usuarios.splice(${i},1);localStorage.setItem('userLogins',JSON.stringify(usuarios));renderUsuarios()">Remover</button>` : '-'}</td></tr>
+        `).join('');
+    }
+
+    function exportarExcel() {
+        const ws = XLSX.utils.json_to_sheet(estoque);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "EstoqueCloud");
+        XLSX.writeFile(wb, "Backup_Estoque_Nuvem.xlsx");
+    }
+</script>
+</body>
+</html>
