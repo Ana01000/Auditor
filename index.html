@@ -2,123 +2,213 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Auditora de Estoque Reverso</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auditora de Estoque Pro</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
-        :root { --primary: #007bff; --bg: #f4f7f6; --white: #ffffff; }
+        :root { 
+            --primary: #0062ff; 
+            --bg: #f8fafc; 
+            --radius: 12px; /* Arredondamento dos retângulos */
+        }
         
-        html, body { height: 100%; margin: 0; padding: 0; overflow-x: hidden; background-color: var(--bg); font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { 
+            background-color: var(--bg); 
+            font-family: 'Inter', sans-serif; /* Fonte sem serifa moderna */
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
+            -webkit-font-smoothing: antialiased;
+        }
         
-        /* Ajuste de Layout para eliminar fundo infinito */
-        #mainUI { display: flex; flex-direction: column; min-height: 100vh; background: var(--bg); }
-        .navbar { background-color: var(--primary) !important; color: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .nav-tabs-custom { background: white; display: flex; border-bottom: 1px solid #ddd; padding: 5px; gap: 5px; position: sticky; top: 0; z-index: 1000; }
-        .nav-link-custom { padding: 8px 15px; border-radius: 5px; border: 1px solid transparent; cursor: pointer; font-size: 14px; color: #555; transition: 0.3s; }
-        .nav-link-custom.active { background: var(--primary); color: white; font-weight: bold; }
+        /* Navbar e Menu */
+        .navbar { background: #000 !important; color: white; font-weight: 800; border-bottom: 1px solid #333; }
+        .nav-tabs-custom { background: white; display: flex; padding: 12px; gap: 10px; border-bottom: 1px solid #e2e8f0; overflow-x: auto; }
+        .nav-link-custom { 
+            padding: 10px 22px; 
+            border-radius: 10px; /* Bordas arredondadas nos botões do menu */
+            cursor: pointer; 
+            color: #64748b; 
+            font-size: 14px; 
+            font-weight: 600; 
+            transition: all 0.2s ease; 
+            white-space: nowrap; 
+            border: 1px solid transparent; 
+        }
+        .nav-link-custom.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .nav-link-custom:hover:not(.active) { background: #f1f5f9; color: #1e293b; }
         
-        .tab-content { display: none; padding: 20px; flex: 1; }
+        /* Conteúdo e Cards */
+        .tab-content { display: none; padding: 25px; flex: 1; overflow-y: auto; }
         .tab-content.active { display: block; }
-        
-        /* Tela de Login */
-        #loginScreen { height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); }
-        .login-box { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 100%; max-width: 400px; }
-        
-        /* Cards do Dashboard */
-        .card-stat { background: white; border-radius: 12px; padding: 20px; text-align: center; border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .card-stat h6 { color: #888; text-transform: uppercase; font-size: 12px; margin-bottom: 10px; }
-        .card-stat .value { font-size: 28px; font-weight: bold; color: #333; }
 
-        /* Tela de Bloqueio */
-        #lockScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; display: none; align-items: center; justify-content: center; z-index: 9999; text-align: center; }
+        .card-custom { 
+            background: white; 
+            border-radius: var(--radius); /* Retângulos arredondados */
+            padding: 24px; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); 
+            margin-bottom: 20px; 
+            border: 1px solid #f1f5f9; 
+        }
         
+        /* Formulários */
+        .form-label { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; }
+        .form-control, .form-select { 
+            border-radius: 10px; /* Campos arredondados */
+            padding: 12px; 
+            border: 1px solid #e2e8f0; 
+            font-size: 14px; 
+            background-color: #fcfdfe;
+        }
+        .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0, 98, 255, 0.1); }
+
+        .btn-primary { border-radius: 10px; padding: 12px; font-weight: 600; transition: transform 0.1s; }
+        .btn-primary:active { transform: scale(0.98); }
+
+        #loginScreen { height: 100vh; display: flex; align-items: center; justify-content: center; background: #000; position: fixed; width: 100%; z-index: 2000; }
         .hidden { display: none !important; }
+        
+        /* Tabela */
+        .table { border-radius: var(--radius); overflow: hidden; border: 1px solid #f1f5f9; }
+        .table thead { background: #f8fafc; }
+        .table th { font-size: 12px; text-transform: uppercase; color: #64748b; font-weight: 700; padding: 15px; }
+        .table td { padding: 15px; font-size: 14px; vertical-align: middle; }
     </style>
 </head>
 <body>
 
-<div id="lockScreen">
-    <div class="p-4">
-        <h2 class="text-dark mb-3">ACESSO RESTRITO</h2>
-        <p class="text-muted">Para realizar essa consulta, entre em contato com a Auditoria.</p>
-        <button onclick="window.location.reload()" class="btn btn-primary">Voltar</button>
-    </div>
-</div>
-
 <div id="loginScreen">
-    <div class="login-box text-center">
-        <h3 class="mb-4">Auditora de Estoque</h3>
-        <input type="email" id="userLogin" class="form-control mb-2 p-2" placeholder="Seu e-mail">
-        <input type="password" id="passLogin" class="form-control mb-3 p-2" placeholder="Sua senha">
-        <button class="btn btn-primary w-100 py-2" id="btnLogar" onclick="realizarLogin()">Acessar Sistema</button>
+    <div class="bg-white p-5 rounded-4 shadow-lg" style="width: 420px; border-radius: 20px !important;">
+        <h3 class="fw-bold mb-1" style="letter-spacing: -1px;">Auditora Pro</h3>
+        <p class="text-muted mb-4 small">Gestão Logística de Reversos</p>
+        <div class="mb-3">
+            <label class="form-label">E-mail</label>
+            <input type="email" id="userLogin" class="form-control" placeholder="exemplo@email.com">
+        </div>
+        <div class="mb-4">
+            <label class="form-label">Senha</label>
+            <input type="password" id="passLogin" class="form-control" placeholder="••••••••">
+        </div>
+        <button class="btn btn-primary w-100 py-3 mb-2" onclick="realizarLogin()">ENTRAR NO SISTEMA</button>
     </div>
 </div>
 
 <div id="mainUI" class="hidden">
-    <nav class="navbar p-3 d-flex justify-content-between">
-        <span class="fw-bold">AUDITORA DE ESTOQUE REVERSO</span>
-        <span id="userInfo" class="badge bg-light text-dark">Carregando...</span>
+    <nav class="navbar p-3">
+        <span class="ms-2">SISTEMA AUDITORA</span>
     </nav>
 
     <div class="nav-tabs-custom">
         <div class="nav-link-custom active" onclick="showTab('dashboard', this)">Dashboard</div>
-        <div class="nav-link-custom" onclick="showTab('registro', this)">Registrar</div>
-        <div class="nav-link-custom" onclick="showTab('relatorios', this)">Histórico</div>
-        <div id="adminTab" class="nav-link-custom hidden" onclick="showTab('usuarios', this)">Gerir Acessos</div>
+        <div class="nav-link-custom" onclick="showTab('registro', this)">Registro</div>
+        <div class="nav-link-custom" onclick="showTab('garantias', this)">Gestão de Garantias</div>
+        <div class="nav-link-custom" onclick="showTab('relatorios', this)">Relatórios</div>
+        <div class="nav-link-custom" onclick="showTab('config', this)">Ajustes</div>
+        <div class="nav-link-custom" onclick="showTab('historico', this)">Histórico</div>
         <div class="nav-link-custom text-danger ms-auto" onclick="location.reload()">Sair</div>
     </div>
 
     <div id="dashboard" class="tab-content active">
-        <div class="row g-3 text-center mb-4">
-            <div class="col-6 col-md-4"><div class="card-stat"><h6>Total</h6><div id="dashTotal" class="value">0</div></div></div>
-            <div class="col-6 col-md-4"><div class="card-stat"><h6>Reestoque</h6><div id="dashReestoque" class="value text-success">0</div></div></div>
-            <div class="col-12 col-md-4"><div class="card-stat"><h6>Perda</h6><div id="dashPerda" class="value text-danger">0</div></div></div>
+        <div class="row g-3 mb-4 text-center">
+            <div class="col-md-3"><div class="card-custom"><h6>Entradas Totais</h6><h2 class="fw-bold" id="dashTotal">0</h2></div></div>
+            <div class="col-md-3"><div class="card-custom text-success"><h6>Reestoque</h6><h2 class="fw-bold" id="dashReestoque">0</h2></div></div>
+            <div class="col-md-3"><div class="card-custom text-warning"><h6>Em Garantia</h6><h2 class="fw-bold" id="dashGarantia">0</h2></div></div>
+            <div class="col-md-3"><div class="card-custom text-danger"><h6>Perda Total</h6><h2 class="fw-bold" id="dashPerda">0</h2></div></div>
         </div>
-        <div class="card-stat mx-auto" style="max-width: 300px;">
-            <canvas id="chartPizza"></canvas>
+        <div class="row">
+            <div class="col-md-6"><div class="card-custom"><h6>Status de Devolução</h6><canvas id="chartPizza"></canvas></div></div>
+            <div class="col-md-6"><div class="card-custom"><h6>Distribuição por Loja</h6><canvas id="chartColuna"></canvas></div></div>
         </div>
     </div>
 
     <div id="registro" class="tab-content">
-        <div class="card-stat mx-auto text-start" style="max-width: 500px;">
-            <h5 class="mb-3">Nova Devolução</h5>
-            <input type="text" id="sku" class="form-control mb-2" placeholder="Bipar SKU">
-            <input type="text" id="nome" class="form-control mb-3" placeholder="Nome do Produto">
-            <select id="statusSel" class="form-select mb-3">
-                <option value="Reestoque">Reestoque</option>
-                <option value="Garantia">Garantia</option>
-                <option value="Perda Total">Perda Total</option>
-            </select>
-            <input type="text" id="notaGarantia" class="form-control mb-3" placeholder="Nota Fiscal (Opcional)">
-            <button class="btn btn-primary w-100" onclick="salvarNoSupabase()">Sincronizar Dados</button>
+        <div class="card-custom mx-auto" style="max-width: 850px;">
+            <h5 class="fw-bold mb-4">Registro de Produto Devolvido</h5>
+            <div class="row g-3">
+                <div class="col-md-6"><label class="form-label">SKU</label><input type="text" id="sku" class="form-control" onblur="buscarNomePorSKU()"></div>
+                <div class="col-md-6"><label class="form-label">Nome do Produto</label><input type="text" id="nome" class="form-control"></div>
+                <div class="col-md-4"><label class="form-label">Custo (R$)</label><input type="number" id="custo" class="form-control" step="0.01"></div>
+                <div class="col-md-4"><label class="form-label">NF Cliente</label><input type="text" id="nf_cliente" class="form-control"></div>
+                <div class="col-md-4"><label class="form-label">Nota Fiscal de Garantias</label><input type="text" id="notaGarantia" class="form-control"></div>
+                <div class="col-md-6"><label class="form-label">Loja Origem</label>
+                    <select id="loja" class="form-select"><option value="Loja Primária">Loja Primária</option><option value="Loja Secundária">Loja Secundária</option></select>
+                </div>
+                <div class="col-md-6"><label class="form-label">Plataforma</label>
+                    <select id="canal" class="form-select"><option value="Mercado Livre">Mercado Livre</option><option value="Shopee">Shopee</option></select>
+                </div>
+                <div class="col-12"><label class="form-label">Status Final</label>
+                    <select id="statusSel" class="form-select"><option value="Reestoque">Reestoque</option><option value="Garantia">Garantia</option><option value="Perda Total">Perda Total</option></select>
+                </div>
+            </div>
+            <button class="btn btn-primary w-100 mt-4 py-3 fw-bold" onclick="salvarRegistro()">CONFIRMAR REGISTRO</button>
+        </div>
+    </div>
+
+    <div id="garantias" class="tab-content">
+        <div class="card-custom mb-4">
+            <h5 class="fw-bold mb-3">Gestão de Garantias (Rastreio)</h5>
+            <div class="input-group mb-4" style="max-width: 500px;">
+                <input type="text" id="searchNFGarantia" class="form-control" placeholder="Nº da Nota Fiscal de Garantia">
+                <button class="btn btn-dark px-4" onclick="buscarProdutosGarantia()">Consultar</button>
+            </div>
+            <div id="garantiaResultArea" class="hidden">
+                <div class="alert d-flex justify-content-between align-items-center mb-3" style="background: #f1f5f9; border-radius: 12px; border: none;">
+                    <span id="labelNFInfo" class="fw-bold text-dark">Nota: ---</span>
+                    <button class="btn btn-sm btn-success px-3 fw-bold rounded-pill" id="btnMarcarRetorno" onclick="toggleRetornoNota()">Baixar Nota</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead><tr><th>SKU</th><th>Produto</th><th>Custo</th><th>NF Cliente</th></tr></thead>
+                        <tbody id="listaProdutosGarantia"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
     <div id="relatorios" class="tab-content">
-        <div class="d-flex justify-content-between mb-3">
-            <h5>Histórico</h5>
-            <button onclick="exportarExcel()" class="btn btn-sm btn-dark">Baixar Excel</button>
-        </div>
-        <div class="table-responsive bg-white rounded shadow-sm">
-            <table class="table table-hover mb-0">
-                <thead><tr><th>Data</th><th>SKU</th><th>Status</th></tr></thead>
-                <tbody id="corpoRelatorio"></tbody>
-            </table>
+        <div class="card-custom mx-auto" style="max-width: 600px;">
+            <h5 class="fw-bold mb-4 text-center">Exportação de Relatórios</h5>
+            <div class="mb-3"><label class="form-label">Loja</label><select id="fLoja" class="form-select"><option value="TODAS">Todas</option><option value="Loja Primária">Loja Primária</option><option value="Loja Secundária">Loja Secundária</option></select></div>
+            <div class="mb-4"><label class="form-label">Status</label><select id="fStatus" class="form-select"><option value="TODOS">Todos</option><option value="Reestoque">Reestoque</option><option value="Garantia">Garantia</option><option value="Perda Total">Perda Total</option></select></div>
+            <div class="d-grid gap-2">
+                <button class="btn btn-outline-success py-2 fw-bold" onclick="gerarRelatorio('EXCEL')">Exportar para Excel</button>
+                <button class="btn btn-outline-danger py-2 fw-bold" onclick="gerarRelatorio('PDF')">Exportar para PDF</button>
+            </div>
         </div>
     </div>
 
-    <div id="usuarios" class="tab-content">
-        <div class="card-stat mx-auto text-start" style="max-width: 500px;">
-            <h5>Criar Acesso Gerente</h5>
-            <p class="text-muted small">Novos usuários criados aqui terão nível GERENTE.</p>
-            <input type="email" id="newEmail" class="form-control mb-2" placeholder="E-mail do Gerente">
-            <input type="password" id="newPass" class="form-control mb-3" placeholder="Senha Inicial">
-            <button class="btn btn-success w-100" onclick="criarNovoGerente()">Cadastrar Gerente</button>
+    <div id="config" class="tab-content">
+        <div class="card-custom mx-auto" style="max-width: 500px;">
+            <h5 class="fw-bold mb-4">Ajustes do Sistema</h5>
+            <div class="mb-3"><label class="form-label">E-mail Administrativo</label><input type="text" id="adminEmailInfo" class="form-control bg-light" readonly></div>
+            <div id="adminOnlyPanel" class="hidden pt-4 border-top mt-4">
+                <h6 class="fw-bold text-primary mb-3">ADICIONAR NOVO ACESSO (GERENTE)</h6>
+                <div class="mb-2"><input type="email" id="newGerenteEmail" class="form-control" placeholder="E-mail"></div>
+                <div class="mb-3"><input type="password" id="newGerentePass" class="form-control" placeholder="Senha provisória"></div>
+                <button class="btn btn-primary w-100 fw-bold" onclick="cadastrarGerente()">CRIAR ACESSO</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="historico" class="tab-content">
+        <div class="card-custom">
+            <h5 class="fw-bold mb-3">Histórico de Movimentações</h5>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead><tr><th>Data</th><th>SKU</th><th>Loja</th><th>Status</th><th>Retornado?</th></tr></thead>
+                    <tbody id="corpoRelatorio"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -128,54 +218,31 @@
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlbHh3YWh5cHRodXNna3NwbmJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNTk2MTYsImV4cCI6MjA4OTkzNTYxNn0.ZwO_RbL2h5vuU-PbgEpKorGWOr_DLJ8fxr-t07pdIJs";
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let currentUser = null;
-    let userRole = 'GERENTE';
     let estoque = [];
-    let myChart = null;
+    let userRole = 'GERENTE';
+    let c1 = null, c2 = null;
 
     async function realizarLogin() {
         const email = document.getElementById('userLogin').value.trim();
-        const password = document.getElementById('passLogin').value;
-        const btn = document.getElementById('btnLogar');
-
-        btn.innerText = "Conectando...";
-        btn.disabled = true;
-
-        const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
-
-        if (error) {
-            alert("Acesso Negado: " + error.message);
-            btn.innerText = "Acessar Sistema";
-            btn.disabled = false;
-        } else {
-            currentUser = data.user;
-            await verificarPermissao(data.user.id, data.user.email);
-        }
-    }
-
-    async function verificarPermissao(uid, email) {
-        // Define quem é Auditora (VOCÊ)
-        if (email === 'club.anatiradentes@gmail.com') {
+        const pass = document.getElementById('passLogin').value;
+        const { data, error } = await _supabase.auth.signInWithPassword({ email, password: pass });
+        if(error) return alert("E-mail ou senha incorretos.");
+        
+        document.getElementById('adminEmailInfo').value = email;
+        if(email === 'club.anatiradentes@gmail.com') {
             userRole = 'AUDITORA';
-            document.getElementById('adminTab').classList.remove('hidden');
-        } else {
-            userRole = 'GERENTE';
+            document.getElementById('adminOnlyPanel').classList.remove('hidden');
         }
-
-        document.getElementById('userInfo').innerText = `${userRole}: ${email}`;
         document.getElementById('loginScreen').classList.add('hidden');
         document.getElementById('mainUI').classList.remove('hidden');
         carregarDados();
     }
 
     function showTab(id, el) {
-        // Bloqueio de Segurança para Gerentes
-        if (id === 'usuarios' && userRole !== 'AUDITORA') {
-            document.getElementById('mainUI').classList.add('hidden');
-            document.getElementById('lockScreen').style.display = 'flex';
+        if(id === 'config' && userRole !== 'AUDITORA') {
+            alert("Acesso exclusivo da Auditoria.");
             return;
         }
-
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.nav-link-custom').forEach(l => l.classList.remove('active'));
         document.getElementById(id).classList.add('active');
@@ -184,86 +251,122 @@
 
     async function carregarDados() {
         const { data } = await _supabase.from('estoque_reverso').select('*').order('created_at', { ascending: false });
-        if(data) {
-            estoque = data;
-            atualizarTabela();
-            atualizarDashboard();
-        }
+        if(data) { estoque = data; atualizarDashboard(); atualizarTabelaGeral(); }
     }
 
-    async function salvarNoSupabase() {
+    function buscarNomePorSKU() {
+        const sku = document.getElementById('sku').value;
+        const p = estoque.find(i => i.sku === sku);
+        if(p) { document.getElementById('nome').value = p.nome; document.getElementById('custo').value = p.custo; }
+    }
+
+    async function salvarRegistro() {
         const item = {
             sku: document.getElementById('sku').value,
             nome: document.getElementById('nome').value,
+            custo: parseFloat(document.getElementById('custo').value) || 0,
+            loja: document.getElementById('loja').value,
+            canal: document.getElementById('canal').value,
+            nf_cliente: document.getElementById('nf_cliente').value,
             status: document.getElementById('statusSel').value,
-            nota_garantia: document.getElementById('notaGarantia').value || 'N/A'
+            nota_garantia: document.getElementById('notaGarantia').value,
+            retornado: false
         };
-
-        if(!item.sku) return alert("Bipe o SKU!");
-
         const { error } = await _supabase.from('estoque_reverso').insert([item]);
-        if(error) alert("Erro: " + error.message);
-        else {
-            alert("Sincronizado!");
-            limparCampos();
-            carregarDados();
-        }
+        if(error) alert("Erro ao salvar dados.");
+        else { alert("Produto registrado com sucesso!"); location.reload(); }
     }
 
     function atualizarDashboard() {
         const r = estoque.filter(x => x.status === 'Reestoque').length;
-        const p = estoque.filter(x => x.status === 'Perda Total').length;
         const g = estoque.filter(x => x.status === 'Garantia').length;
-
+        const p = estoque.filter(x => x.status === 'Perda Total').length;
         document.getElementById('dashTotal').innerText = estoque.length;
         document.getElementById('dashReestoque').innerText = r;
+        document.getElementById('dashGarantia').innerText = g;
         document.getElementById('dashPerda').innerText = p;
 
-        if(myChart) myChart.destroy();
-        const ctx = document.getElementById('chartPizza').getContext('2d');
-        myChart = new Chart(ctx, {
+        if(c1) c1.destroy();
+        c1 = new Chart(document.getElementById('chartPizza'), {
             type: 'doughnut',
-            data: {
-                labels: ['Reestoque', 'Perda', 'Garantia'],
-                datasets: [{ data: [r, p, g], backgroundColor: ['#28a745', '#dc3545', '#ffc107'] }]
-            },
-            options: { plugins: { legend: { position: 'bottom' } } }
+            data: { labels: ['Reestoque', 'Garantia', 'Perda'], datasets: [{ data: [r, g, p], backgroundColor: ['#10b981', '#f59e0b', '#ef4444'], borderDashOffset: 2 }] },
+            options: { plugins: { legend: { position: 'bottom' } }, cutout: '70%' }
+        });
+        
+        if(c2) c2.destroy();
+        const l1 = estoque.filter(x => x.loja === 'Loja Primária').length;
+        const l2 = estoque.filter(x => x.loja === 'Loja Secundária').length;
+        c2 = new Chart(document.getElementById('chartColuna'), {
+            type: 'bar',
+            data: { labels: ['Primária', 'Secundária'], datasets: [{ label: 'Qtd Itens', data: [l1, l2], backgroundColor: '#6366f1', borderRadius: 8 }] },
+            options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
         });
     }
 
-    function atualizarTabela() {
-        document.getElementById('corpoRelatorio').innerHTML = estoque.map(p => `
+    function atualizarTabelaGeral() {
+        document.getElementById('corpoRelatorio').innerHTML = estoque.map(i => `
             <tr>
-                <td>${new Date(p.created_at).toLocaleDateString()}</td>
-                <td>${p.sku}</td>
-                <td><span class="badge ${p.status === 'Reestoque' ? 'bg-success' : 'bg-danger'}">${p.status}</span></td>
+                <td>${new Date(i.created_at).toLocaleDateString()}</td>
+                <td><span class="fw-bold">${i.sku}</span></td>
+                <td>${i.loja}</td>
+                <td><span class="badge ${i.status==='Reestoque'?'bg-success':'bg-danger'} rounded-pill">${i.status}</span></td>
+                <td>${i.retornado ? '<span class="text-success fw-bold">Sim</span>' : '<span class="text-muted">Não</span>'}</td>
             </tr>
         `).join('');
     }
 
-    async function criarNovoGerente() {
-        const email = document.getElementById('newEmail').value;
-        const password = document.getElementById('newPass').value;
+    function buscarProdutosGarantia() {
+        const nf = document.getElementById('searchNFGarantia').value;
+        if(!nf) return;
+        const filtrados = estoque.filter(i => i.nota_garantia === nf);
+        if(filtrados.length === 0) { alert("Nenhum item encontrado para esta Nota Fiscal."); return; }
         
-        if(!email || !password) return alert("Preencha e-mail e senha!");
+        document.getElementById('garantiaResultArea').classList.remove('hidden');
+        document.getElementById('labelNFInfo').innerText = `NF: ${nf} (${filtrados.length} itens)`;
+        
+        const isRetornado = filtrados.every(i => i.retornado === true);
+        document.getElementById('btnMarcarRetorno').innerText = isRetornado ? "Reabrir Nota" : "Confirmar Retorno de Todos";
+        document.getElementById('btnMarcarRetorno').className = isRetornado ? "btn btn-sm btn-outline-secondary fw-bold rounded-pill" : "btn btn-sm btn-success fw-bold rounded-pill";
 
-        const { error } = await _supabase.auth.signUp({ email, password });
-        
-        if(error) alert("Erro ao criar: " + error.message);
-        else alert("Gerente criado com sucesso! Ele já pode logar.");
+        document.getElementById('listaProdutosGarantia').innerHTML = filtrados.map(i => `
+            <tr><td>${i.sku}</td><td>${i.nome}</td><td>R$ ${i.custo}</td><td>${i.nf_cliente}</td></tr>
+        `).join('');
     }
 
-    function limparCampos() {
-        document.getElementById('sku').value = '';
-        document.getElementById('nome').value = '';
-        document.getElementById('notaGarantia').value = '';
+    async function toggleRetornoNota() {
+        const nf = document.getElementById('searchNFGarantia').value;
+        const filtrados = estoque.filter(i => i.nota_garantia === nf);
+        const novoStatus = !filtrados[0].retornado;
+        const { error } = await _supabase.from('estoque_reverso').update({ retornado: novoStatus }).eq('nota_garantia', nf);
+        if(!error) { alert("Status da Nota Fiscal atualizado!"); carregarDados(); buscarProdutosGarantia(); }
     }
 
-    function exportarExcel() {
-        const ws = XLSX.utils.json_to_sheet(estoque);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Reverso");
-        XLSX.writeFile(wb, "Auditoria_Estoque.xlsx");
+    function gerarRelatorio(tipo) {
+        const fl = document.getElementById('fLoja').value;
+        const fs = document.getElementById('fStatus').value;
+        const filtrados = estoque.filter(i => (fl==='TODAS'||i.loja===fl) && (fs==='TODOS'||i.status===fs));
+
+        if(tipo === 'EXCEL') {
+            const ws = XLSX.utils.json_to_sheet(filtrados);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Dados");
+            XLSX.writeFile(wb, "Relatorio_Auditoria.xlsx");
+        } else {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.text("Auditoria Pro - Relatório de Movimentações", 14, 15);
+            const cols = ["Data", "SKU", "Produto", "Status", "Loja"];
+            const rows = filtrados.map(i => [new Date(i.created_at).toLocaleDateString(), i.sku, i.nome, i.status, i.loja]);
+            doc.autoTable({ head:[cols], body:rows, startY:22, theme: 'striped' });
+            doc.save("Relatorio_Auditoria.pdf");
+        }
+    }
+
+    async function cadastrarGerente() {
+        const e = document.getElementById('newGerenteEmail').value;
+        const p = document.getElementById('newGerentePass').value;
+        const { error } = await _supabase.auth.signUp({ email: e, password: p });
+        if(error) alert("Erro ao criar conta."); else alert("Acesso Gerente criado!");
     }
 </script>
 </body>
