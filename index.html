@@ -13,18 +13,13 @@
     <style>
         body { background-color: #ffffff; color: #333; font-family: 'Segoe UI', sans-serif; }
         .navbar { background-color: #007bff !important; }
-        
-        /* Cores de Status que você pediu */
         .btn-check:checked + .btn-outline-primary { background-color: #007bff !important; color: white !important; }
         .status-prejuizo { background-color: #ff4d4d !important; color: white !important; font-weight: bold; }
-        
-        /* Telas */
         #loginScreen { height: 100vh; display: flex; align-items: center; justify-content: center; background-color: #f8f9fa; }
         .login-box { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 350px; }
         .tab-content { display: none; padding: 20px; }
         .tab-content.active { display: block; }
         .hidden { display: none; }
-        
         .card { border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; padding: 20px; }
     </style>
 </head>
@@ -35,7 +30,7 @@
         <h4 class="mb-4">Auditor de Estoque</h4>
         <input type="email" id="userLogin" class="form-control mb-2" placeholder="E-mail">
         <input type="password" id="passLogin" class="form-control mb-3" placeholder="Senha">
-        <button class="btn btn-primary w-100" onclick="realizarLogin()">Acessar Sistema</button>
+        <button class="btn btn-primary w-100" id="btnLogar" onclick="realizarLogin()">Acessar Sistema</button>
     </div>
 </div>
 
@@ -104,28 +99,41 @@
 </div>
 
 <script>
-    // CONFIGURAÇÃO SUPABASE
     const SUPABASE_URL = "https://felxwahypthusgkspnbo.supabase.co";
-    // CHAVE EXTRAÍDA DA SUA FOTO:
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlbHh3YWh5cHRodXNna3NwbmJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNTk2MTYsImV4cCI6MjA4OTkzNTYxNn0.ZwO_RbL2h5vuU-PbgEpKorGWOr_DLJ8fxr-t07pdIJs";
     
+    // Corrigido: Usando a biblioteca carregada via CDN
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let estoque = [];
     let myChart = null;
 
     async function realizarLogin() {
-        const email = document.getElementById('userLogin').value;
+        const email = document.getElementById('userLogin').value.trim();
         const password = document.getElementById('passLogin').value;
+        const btn = document.getElementById('btnLogar');
 
-        const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+        if(!email || !password) return alert("Preencha todos os campos!");
+        
+        btn.innerText = "Carregando...";
+        btn.disabled = true;
 
-        if (error) {
-            alert("Erro de acesso: " + error.message);
-        } else {
-            document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('mainUI').classList.remove('hidden');
-            await carregarDados();
+        try {
+            const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+
+            if (error) {
+                alert("Erro: " + error.message);
+                btn.innerText = "Acessar Sistema";
+                btn.disabled = false;
+            } else {
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('mainUI').classList.remove('hidden');
+                await carregarDados();
+            }
+        } catch (e) {
+            alert("Erro de conexão. Verifique sua internet.");
+            btn.innerText = "Acessar Sistema";
+            btn.disabled = false;
         }
     }
 
@@ -164,4 +172,56 @@
         const p = estoque.filter(x => x.status === 'Perda Total').length;
 
         document.getElementById('dashTotal').innerText = estoque.length;
-        document.getElementById('dashRe
+        document.getElementById('dashReestoque').innerText = r;
+        document.getElementById('dashPerda').innerText = p;
+
+        if(myChart) myChart.destroy();
+        const ctx = document.getElementById('chartPizza');
+        if(ctx) {
+            myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Reestoque', 'Garantia', 'Perda'],
+                    datasets: [{ data: [r, g, p], backgroundColor: ['#28a745', '#007bff', '#ff4d4d'] }]
+                }
+            });
+        }
+    }
+
+    function atualizarTabela() {
+        document.getElementById('corpoRelatorio').innerHTML = estoque.map(p => `
+            <tr class="${p.status === 'Perda Total' ? 'status-prejuizo' : ''}">
+                <td>${new Date(p.created_at).toLocaleDateString()}</td>
+                <td>${p.sku}</td>
+                <td>${p.nome}</td>
+                <td>${p.status}</td>
+                <td>${p.nota_garantia}</td>
+            </tr>
+        `).join('');
+    }
+
+    function showTab(id) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    function toggleGarantia() {
+        const status = document.querySelector('input[name="status"]:checked').value;
+        document.getElementById('campoGarantia').classList.toggle('hidden', status !== 'Garantia');
+    }
+
+    function limparCampos() {
+        document.getElementById('sku').value = '';
+        document.getElementById('nome').value = '';
+        document.getElementById('notaGarantia').value = '';
+    }
+
+    function exportarExcel() {
+        const ws = XLSX.utils.json_to_sheet(estoque);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Estoque");
+        XLSX.writeFile(wb, "Relatorio_Auditoria.xlsx");
+    }
+</script>
+</body>
+</html>
