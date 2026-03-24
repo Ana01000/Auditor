@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auditora de Estoque Pro</title>
+    <title>Auditor de Estoque Reverso</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
@@ -14,201 +14,148 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
-        :root { 
-            --primary: #0062ff; 
-            --bg: #f8fafc; 
-            --radius: 12px; /* Arredondamento dos retângulos */
-        }
+        :root { --primary: #0056ff; --bg: #f4f7fe; --radius: 16px; }
+        body { background-color: var(--bg); font-family: 'Inter', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        body { 
-            background-color: var(--bg); 
-            font-family: 'Inter', sans-serif; /* Fonte sem serifa moderna */
-            height: 100vh; 
-            display: flex; 
-            flex-direction: column; 
-            overflow: hidden; 
-            -webkit-font-smoothing: antialiased;
-        }
+        .navbar { background: white !important; border-bottom: 2px solid #eef2f7; padding: 15px 25px; }
+        .navbar-brand { color: var(--primary) !important; font-weight: 800; font-size: 20px; }
+
+        .nav-tabs-custom { background: white; display: flex; padding: 10px 20px; gap: 10px; border-bottom: 1px solid #e2e8f0; overflow-x: auto; }
+        .nav-link-custom { padding: 10px 20px; border-radius: 12px; cursor: pointer; color: #64748b; font-size: 14px; font-weight: 600; transition: 0.3s; white-space: nowrap; }
+        .nav-link-custom.active { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(0, 86, 255, 0.2); }
         
-        /* Navbar e Menu */
-        .navbar { background: #000 !important; color: white; font-weight: 800; border-bottom: 1px solid #333; }
-        .nav-tabs-custom { background: white; display: flex; padding: 12px; gap: 10px; border-bottom: 1px solid #e2e8f0; overflow-x: auto; }
-        .nav-link-custom { 
-            padding: 10px 22px; 
-            border-radius: 10px; /* Bordas arredondadas nos botões do menu */
-            cursor: pointer; 
-            color: #64748b; 
-            font-size: 14px; 
-            font-weight: 600; 
-            transition: all 0.2s ease; 
-            white-space: nowrap; 
-            border: 1px solid transparent; 
-        }
-        .nav-link-custom.active { background: var(--primary); color: white; border-color: var(--primary); }
-        .nav-link-custom:hover:not(.active) { background: #f1f5f9; color: #1e293b; }
-        
-        /* Conteúdo e Cards */
         .tab-content { display: none; padding: 25px; flex: 1; overflow-y: auto; }
         .tab-content.active { display: block; }
 
-        .card-custom { 
-            background: white; 
-            border-radius: var(--radius); /* Retângulos arredondados */
-            padding: 24px; 
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); 
-            margin-bottom: 20px; 
-            border: 1px solid #f1f5f9; 
-        }
+        .card-custom { background: white; border-radius: var(--radius); padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); margin-bottom: 20px; border: 1px solid #f1f5f9; }
+        .form-label { font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 6px; }
+        .form-control, .form-select { border-radius: 12px; padding: 12px; border: 1px solid #e2e8f0; font-size: 14px; }
+        .btn-primary { background: var(--primary); border: none; border-radius: 12px; padding: 14px; font-weight: 700; }
         
-        /* Formulários */
-        .form-label { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; }
-        .form-control, .form-select { 
-            border-radius: 10px; /* Campos arredondados */
-            padding: 12px; 
-            border: 1px solid #e2e8f0; 
-            font-size: 14px; 
-            background-color: #fcfdfe;
-        }
-        .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0, 98, 255, 0.1); }
+        /* Estilo Relatórios */
+        .mini-card { background: #f8fafc; border-radius: 12px; padding: 15px; border: 1px solid #e2e8f0; }
+        .report-chart-container { height: 80px; }
 
-        .btn-primary { border-radius: 10px; padding: 12px; font-weight: 600; transition: transform 0.1s; }
-        .btn-primary:active { transform: scale(0.98); }
-
-        #loginScreen { height: 100vh; display: flex; align-items: center; justify-content: center; background: #000; position: fixed; width: 100%; z-index: 2000; }
+        #loginScreen { height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--primary); position: fixed; width: 100%; z-index: 2000; }
         .hidden { display: none !important; }
-        
-        /* Tabela */
-        .table { border-radius: var(--radius); overflow: hidden; border: 1px solid #f1f5f9; }
-        .table thead { background: #f8fafc; }
-        .table th { font-size: 12px; text-transform: uppercase; color: #64748b; font-weight: 700; padding: 15px; }
-        .table td { padding: 15px; font-size: 14px; vertical-align: middle; }
     </style>
 </head>
 <body>
 
 <div id="loginScreen">
-    <div class="bg-white p-5 rounded-4 shadow-lg" style="width: 420px; border-radius: 20px !important;">
-        <h3 class="fw-bold mb-1" style="letter-spacing: -1px;">Auditora Pro</h3>
-        <p class="text-muted mb-4 small">Gestão Logística de Reversos</p>
-        <div class="mb-3">
-            <label class="form-label">E-mail</label>
-            <input type="email" id="userLogin" class="form-control" placeholder="exemplo@email.com">
-        </div>
-        <div class="mb-4">
-            <label class="form-label">Senha</label>
-            <input type="password" id="passLogin" class="form-control" placeholder="••••••••">
-        </div>
-        <button class="btn btn-primary w-100 py-3 mb-2" onclick="realizarLogin()">ENTRAR NO SISTEMA</button>
+    <div class="bg-white p-5 shadow-lg" style="width: 400px; border-radius: 24px;">
+        <h3 class="fw-bold text-primary text-center mb-4">Auditor Pro</h3>
+        <input type="email" id="userLogin" class="form-control mb-3" placeholder="E-mail">
+        <input type="password" id="passLogin" class="form-control mb-4" placeholder="Senha">
+        <button class="btn btn-primary w-100 py-3" onclick="realizarLogin()">ENTRAR</button>
     </div>
 </div>
 
 <div id="mainUI" class="hidden">
-    <nav class="navbar p-3">
-        <span class="ms-2">SISTEMA AUDITORA</span>
-    </nav>
+    <nav class="navbar"><span class="navbar-brand">Auditor de Estoque Reverso</span></nav>
 
     <div class="nav-tabs-custom">
         <div class="nav-link-custom active" onclick="showTab('dashboard', this)">Dashboard</div>
         <div class="nav-link-custom" onclick="showTab('registro', this)">Registro</div>
         <div class="nav-link-custom" onclick="showTab('garantias', this)">Gestão de Garantias</div>
         <div class="nav-link-custom" onclick="showTab('relatorios', this)">Relatórios</div>
-        <div class="nav-link-custom" onclick="showTab('config', this)">Ajustes</div>
         <div class="nav-link-custom" onclick="showTab('historico', this)">Histórico</div>
-        <div class="nav-link-custom text-danger ms-auto" onclick="location.reload()">Sair</div>
+        <div class="nav-link-custom text-danger ms-auto" onclick="logout()">Sair</div>
     </div>
 
     <div id="dashboard" class="tab-content active">
-        <div class="row g-3 mb-4 text-center">
-            <div class="col-md-3"><div class="card-custom"><h6>Entradas Totais</h6><h2 class="fw-bold" id="dashTotal">0</h2></div></div>
-            <div class="col-md-3"><div class="card-custom text-success"><h6>Reestoque</h6><h2 class="fw-bold" id="dashReestoque">0</h2></div></div>
-            <div class="col-md-3"><div class="card-custom text-warning"><h6>Em Garantia</h6><h2 class="fw-bold" id="dashGarantia">0</h2></div></div>
-            <div class="col-md-3"><div class="card-custom text-danger"><h6>Perda Total</h6><h2 class="fw-bold" id="dashPerda">0</h2></div></div>
+        <div class="row g-3 mb-4">
+            <div class="col-md-3"><div class="card-custom text-center"><h6>Total Geral</h6><h2 id="dashTotal">0</h2></div></div>
+            <div class="col-md-3"><div class="card-custom text-center text-success"><h6>Reestoque</h6><h2 id="dashReestoque">0</h2></div></div>
+            <div class="col-md-3"><div class="card-custom text-center text-warning"><h6>Garantias</h6><h2 id="dashGarantia">0</h2></div></div>
+            <div class="col-md-3"><div class="card-custom text-center text-danger"><h6>Perdas</h6><h2 id="dashPerda">0</h2></div></div>
         </div>
-        <div class="row">
-            <div class="col-md-6"><div class="card-custom"><h6>Status de Devolução</h6><canvas id="chartPizza"></canvas></div></div>
-            <div class="col-md-6"><div class="card-custom"><h6>Distribuição por Loja</h6><canvas id="chartColuna"></canvas></div></div>
-        </div>
+        <div class="row"><div class="col-12"><div class="card-custom"><canvas id="chartGeral" height="100"></canvas></div></div></div>
     </div>
 
     <div id="registro" class="tab-content">
-        <div class="card-custom mx-auto" style="max-width: 850px;">
-            <h5 class="fw-bold mb-4">Registro de Produto Devolvido</h5>
+        <div class="card-custom mx-auto" style="max-width: 800px;">
+            <h5 class="fw-bold mb-4 text-primary">Novo Registro</h5>
             <div class="row g-3">
                 <div class="col-md-6"><label class="form-label">SKU</label><input type="text" id="sku" class="form-control" onblur="buscarNomePorSKU()"></div>
-                <div class="col-md-6"><label class="form-label">Nome do Produto</label><input type="text" id="nome" class="form-control"></div>
-                <div class="col-md-4"><label class="form-label">Custo (R$)</label><input type="number" id="custo" class="form-control" step="0.01"></div>
+                <div class="col-md-6"><label class="form-label">Nome Produto</label><input type="text" id="nome" class="form-control"></div>
+                <div class="col-md-6"><label class="form-label">Fornecedor</label><input type="text" id="fornecedor" class="form-control"></div>
+                <div class="col-md-6"><label class="form-label">NF Garantia</label><input type="text" id="notaGarantia" class="form-control"></div>
+                <div class="col-md-4"><label class="form-label">Custo</label><input type="number" id="custo" class="form-control"></div>
                 <div class="col-md-4"><label class="form-label">NF Cliente</label><input type="text" id="nf_cliente" class="form-control"></div>
-                <div class="col-md-4"><label class="form-label">Nota Fiscal de Garantias</label><input type="text" id="notaGarantia" class="form-control"></div>
-                <div class="col-md-6"><label class="form-label">Loja Origem</label>
-                    <select id="loja" class="form-select"><option value="Loja Primária">Loja Primária</option><option value="Loja Secundária">Loja Secundária</option></select>
-                </div>
-                <div class="col-md-6"><label class="form-label">Plataforma</label>
-                    <select id="canal" class="form-select"><option value="Mercado Livre">Mercado Livre</option><option value="Shopee">Shopee</option></select>
-                </div>
-                <div class="col-12"><label class="form-label">Status Final</label>
-                    <select id="statusSel" class="form-select"><option value="Reestoque">Reestoque</option><option value="Garantia">Garantia</option><option value="Perda Total">Perda Total</option></select>
+                <div class="col-md-4"><label class="form-label">Status</label>
+                    <select id="statusSel" class="form-select">
+                        <option value="Reestoque">Reestoque</option>
+                        <option value="Garantia">Garantia</option>
+                        <option value="Perda Total">Perda Total</option>
+                    </select>
                 </div>
             </div>
-            <button class="btn btn-primary w-100 mt-4 py-3 fw-bold" onclick="salvarRegistro()">CONFIRMAR REGISTRO</button>
+            <button class="btn btn-primary w-100 mt-4" id="btnSalvar" onclick="salvarRegistro()">SALVAR REGISTRO</button>
         </div>
     </div>
 
     <div id="garantias" class="tab-content">
-        <div class="card-custom mb-4">
-            <h5 class="fw-bold mb-3">Gestão de Garantias (Rastreio)</h5>
+        <div class="card-custom">
+            <h5 class="fw-bold mb-4 text-primary">Consultar Garantia</h5>
             <div class="input-group mb-4" style="max-width: 500px;">
-                <input type="text" id="searchNFGarantia" class="form-control" placeholder="Nº da Nota Fiscal de Garantia">
-                <button class="btn btn-dark px-4" onclick="buscarProdutosGarantia()">Consultar</button>
+                <input type="text" id="searchNF" class="form-control" placeholder="Digite a Nota Fiscal">
+                <button class="btn btn-primary" onclick="buscarProdutosGarantia()">Buscar</button>
             </div>
-            <div id="garantiaResultArea" class="hidden">
-                <div class="alert d-flex justify-content-between align-items-center mb-3" style="background: #f1f5f9; border-radius: 12px; border: none;">
-                    <span id="labelNFInfo" class="fw-bold text-dark">Nota: ---</span>
-                    <button class="btn btn-sm btn-success px-3 fw-bold rounded-pill" id="btnMarcarRetorno" onclick="toggleRetornoNota()">Baixar Nota</button>
+            <div id="garantiaResultArea" class="hidden mb-4">
+                <div class="alert bg-light d-flex justify-content-between align-items-center">
+                    <span id="labelNFInfo" class="fw-bold">Nota: ---</span>
+                    <button class="btn btn-sm btn-success rounded-pill" onclick="toggleRetornoNota()">Baixar Nota</button>
                 </div>
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead><tr><th>SKU</th><th>Produto</th><th>Custo</th><th>NF Cliente</th></tr></thead>
-                        <tbody id="listaProdutosGarantia"></tbody>
-                    </table>
-                </div>
+                <table class="table table-sm">
+                    <thead><tr><th>SKU</th><th>Produto</th><th>Fornecedor</th></tr></thead>
+                    <tbody id="listaProdutosGarantia"></tbody>
+                </table>
+            </div>
+
+            <hr>
+            <h6 class="fw-bold mt-4 mb-3">Últimas Garantias Adicionadas</h6>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light"><tr><th>NF</th><th>Fornecedor</th><th>Data</th><th>Status</th></tr></thead>
+                    <tbody id="recentesGarantia"></tbody>
+                </table>
             </div>
         </div>
     </div>
 
     <div id="relatorios" class="tab-content">
-        <div class="card-custom mx-auto" style="max-width: 600px;">
-            <h5 class="fw-bold mb-4 text-center">Exportação de Relatórios</h5>
-            <div class="mb-3"><label class="form-label">Loja</label><select id="fLoja" class="form-select"><option value="TODAS">Todas</option><option value="Loja Primária">Loja Primária</option><option value="Loja Secundária">Loja Secundária</option></select></div>
-            <div class="mb-4"><label class="form-label">Status</label><select id="fStatus" class="form-select"><option value="TODOS">Todos</option><option value="Reestoque">Reestoque</option><option value="Garantia">Garantia</option><option value="Perda Total">Perda Total</option></select></div>
-            <div class="d-grid gap-2">
-                <button class="btn btn-outline-success py-2 fw-bold" onclick="gerarRelatorio('EXCEL')">Exportar para Excel</button>
-                <button class="btn btn-outline-danger py-2 fw-bold" onclick="gerarRelatorio('PDF')">Exportar para PDF</button>
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <div class="mini-card h-100">
+                    <h6 class="fw-bold">Taxa de Recuperação (Reestoque)</h6>
+                    <div class="report-chart-container"><canvas id="sparklineRecuperacao"></canvas></div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mini-card h-100">
+                    <h6 class="fw-bold">Prejuízo Estimado (Perda)</h6>
+                    <div class="report-chart-container"><canvas id="sparklinePerda"></canvas></div>
+                </div>
             </div>
         </div>
-    </div>
-
-    <div id="config" class="tab-content">
         <div class="card-custom mx-auto" style="max-width: 500px;">
-            <h5 class="fw-bold mb-4">Ajustes do Sistema</h5>
-            <div class="mb-3"><label class="form-label">E-mail Administrativo</label><input type="text" id="adminEmailInfo" class="form-control bg-light" readonly></div>
-            <div id="adminOnlyPanel" class="hidden pt-4 border-top mt-4">
-                <h6 class="fw-bold text-primary mb-3">ADICIONAR NOVO ACESSO (GERENTE)</h6>
-                <div class="mb-2"><input type="email" id="newGerenteEmail" class="form-control" placeholder="E-mail"></div>
-                <div class="mb-3"><input type="password" id="newGerentePass" class="form-control" placeholder="Senha provisória"></div>
-                <button class="btn btn-primary w-100 fw-bold" onclick="cadastrarGerente()">CRIAR ACESSO</button>
+            <h5 class="fw-bold mb-4 text-center">Exportar Relatórios</h5>
+            <select id="fStatus" class="form-select mb-3"><option value="TODOS">Todos os Status</option><option value="Garantia">Garantia</option></select>
+            <div class="d-grid gap-2">
+                <button class="btn btn-outline-primary fw-bold" onclick="gerarRelatorio('EXCEL')">Excel</button>
+                <button class="btn btn-outline-dark fw-bold" onclick="gerarRelatorio('PDF')">PDF</button>
             </div>
         </div>
     </div>
 
     <div id="historico" class="tab-content">
         <div class="card-custom">
-            <h5 class="fw-bold mb-3">Histórico de Movimentações</h5>
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead><tr><th>Data</th><th>SKU</th><th>Loja</th><th>Status</th><th>Retornado?</th></tr></thead>
-                    <tbody id="corpoRelatorio"></tbody>
-                </table>
-            </div>
+            <h5 class="fw-bold mb-3">Histórico Geral</h5>
+            <table class="table table-hover">
+                <thead><tr><th>Data</th><th>SKU</th><th>Status</th><th>Retorno</th></tr></thead>
+                <tbody id="corpoRelatorio"></tbody>
+            </table>
         </div>
     </div>
 </div>
@@ -219,30 +166,30 @@
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let estoque = [];
-    let userRole = 'GERENTE';
-    let c1 = null, c2 = null;
+    let charts = {};
+
+    async function verificarSessao() {
+        const { data: { session } } = await _supabase.auth.getSession();
+        if (session) logarSucesso(session.user.email);
+    }
+    verificarSessao();
 
     async function realizarLogin() {
-        const email = document.getElementById('userLogin').value.trim();
-        const pass = document.getElementById('passLogin').value;
-        const { data, error } = await _supabase.auth.signInWithPassword({ email, password: pass });
-        if(error) return alert("E-mail ou senha incorretos.");
-        
-        document.getElementById('adminEmailInfo').value = email;
-        if(email === 'club.anatiradentes@gmail.com') {
-            userRole = 'AUDITORA';
-            document.getElementById('adminOnlyPanel').classList.remove('hidden');
-        }
+        const email = document.getElementById('userLogin').value;
+        const password = document.getElementById('passLogin').value;
+        const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+        if (error) alert("Erro login"); else logarSucesso(email);
+    }
+
+    function logarSucesso(email) {
         document.getElementById('loginScreen').classList.add('hidden');
         document.getElementById('mainUI').classList.remove('hidden');
         carregarDados();
     }
 
+    async function logout() { await _supabase.auth.signOut(); location.reload(); }
+
     function showTab(id, el) {
-        if(id === 'config' && userRole !== 'AUDITORA') {
-            alert("Acesso exclusivo da Auditoria.");
-            return;
-        }
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.nav-link-custom').forEach(l => l.classList.remove('active'));
         document.getElementById(id).classList.add('active');
@@ -251,30 +198,29 @@
 
     async function carregarDados() {
         const { data } = await _supabase.from('estoque_reverso').select('*').order('created_at', { ascending: false });
-        if(data) { estoque = data; atualizarDashboard(); atualizarTabelaGeral(); }
-    }
-
-    function buscarNomePorSKU() {
-        const sku = document.getElementById('sku').value;
-        const p = estoque.find(i => i.sku === sku);
-        if(p) { document.getElementById('nome').value = p.nome; document.getElementById('custo').value = p.custo; }
+        if(data) { estoque = data; atualizarDashboard(); atualizarTabelaGeral(); atualizarGarantiasRecentes(); atualizarSparklines(); }
     }
 
     async function salvarRegistro() {
+        const btn = document.getElementById('btnSalvar');
+        btn.disabled = true;
         const item = {
             sku: document.getElementById('sku').value,
             nome: document.getElementById('nome').value,
             custo: parseFloat(document.getElementById('custo').value) || 0,
-            loja: document.getElementById('loja').value,
-            canal: document.getElementById('canal').value,
+            fornecedor: document.getElementById('fornecedor').value,
             nf_cliente: document.getElementById('nf_cliente').value,
             status: document.getElementById('statusSel').value,
             nota_garantia: document.getElementById('notaGarantia').value,
             retornado: false
         };
         const { error } = await _supabase.from('estoque_reverso').insert([item]);
-        if(error) alert("Erro ao salvar dados.");
-        else { alert("Produto registrado com sucesso!"); location.reload(); }
+        if(!error) { alert("Registrado!"); limparCampos(); carregarDados(); }
+        btn.disabled = false;
+    }
+
+    function limparCampos() {
+        ['sku','nome','custo','nf_cliente','notaGarantia','fornecedor'].forEach(id => document.getElementById(id).value = '');
     }
 
     function atualizarDashboard() {
@@ -285,88 +231,68 @@
         document.getElementById('dashReestoque').innerText = r;
         document.getElementById('dashGarantia').innerText = g;
         document.getElementById('dashPerda').innerText = p;
-
-        if(c1) c1.destroy();
-        c1 = new Chart(document.getElementById('chartPizza'), {
-            type: 'doughnut',
-            data: { labels: ['Reestoque', 'Garantia', 'Perda'], datasets: [{ data: [r, g, p], backgroundColor: ['#10b981', '#f59e0b', '#ef4444'], borderDashOffset: 2 }] },
-            options: { plugins: { legend: { position: 'bottom' } }, cutout: '70%' }
-        });
-        
-        if(c2) c2.destroy();
-        const l1 = estoque.filter(x => x.loja === 'Loja Primária').length;
-        const l2 = estoque.filter(x => x.loja === 'Loja Secundária').length;
-        c2 = new Chart(document.getElementById('chartColuna'), {
-            type: 'bar',
-            data: { labels: ['Primária', 'Secundária'], datasets: [{ label: 'Qtd Itens', data: [l1, l2], backgroundColor: '#6366f1', borderRadius: 8 }] },
-            options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-        });
     }
 
-    function atualizarTabelaGeral() {
-        document.getElementById('corpoRelatorio').innerHTML = estoque.map(i => `
+    function atualizarGarantiasRecentes() {
+        const gar = estoque.filter(i => i.status === 'Garantia').slice(0, 5);
+        document.getElementById('recentesGarantia').innerHTML = gar.map(i => `
             <tr>
+                <td><b>${i.nota_garantia || 'S/N'}</b></td>
+                <td>${i.fornecedor || '-'}</td>
                 <td>${new Date(i.created_at).toLocaleDateString()}</td>
-                <td><span class="fw-bold">${i.sku}</span></td>
-                <td>${i.loja}</td>
-                <td><span class="badge ${i.status==='Reestoque'?'bg-success':'bg-danger'} rounded-pill">${i.status}</span></td>
-                <td>${i.retornado ? '<span class="text-success fw-bold">Sim</span>' : '<span class="text-muted">Não</span>'}</td>
+                <td><span class="badge ${i.retornado?'bg-success':'bg-warning'}">${i.retornado?'Baixada':'Pendente'}</span></td>
             </tr>
         `).join('');
     }
 
     function buscarProdutosGarantia() {
-        const nf = document.getElementById('searchNFGarantia').value;
-        if(!nf) return;
+        const nf = document.getElementById('searchNF').value;
         const filtrados = estoque.filter(i => i.nota_garantia === nf);
-        if(filtrados.length === 0) { alert("Nenhum item encontrado para esta Nota Fiscal."); return; }
+        if(filtrados.length === 0) return alert("Nota não encontrada!");
         
         document.getElementById('garantiaResultArea').classList.remove('hidden');
-        document.getElementById('labelNFInfo').innerText = `NF: ${nf} (${filtrados.length} itens)`;
-        
-        const isRetornado = filtrados.every(i => i.retornado === true);
-        document.getElementById('btnMarcarRetorno').innerText = isRetornado ? "Reabrir Nota" : "Confirmar Retorno de Todos";
-        document.getElementById('btnMarcarRetorno').className = isRetornado ? "btn btn-sm btn-outline-secondary fw-bold rounded-pill" : "btn btn-sm btn-success fw-bold rounded-pill";
-
+        document.getElementById('labelNFInfo').innerText = `Nota: ${nf} | Fornecedor: ${filtrados[0].fornecedor || 'Não inf.'}`;
         document.getElementById('listaProdutosGarantia').innerHTML = filtrados.map(i => `
-            <tr><td>${i.sku}</td><td>${i.nome}</td><td>R$ ${i.custo}</td><td>${i.nf_cliente}</td></tr>
+            <tr><td>${i.sku}</td><td>${i.nome}</td><td>${i.fornecedor || '-'}</td></tr>
         `).join('');
     }
 
     async function toggleRetornoNota() {
-        const nf = document.getElementById('searchNFGarantia').value;
-        const filtrados = estoque.filter(i => i.nota_garantia === nf);
-        const novoStatus = !filtrados[0].retornado;
-        const { error } = await _supabase.from('estoque_reverso').update({ retornado: novoStatus }).eq('nota_garantia', nf);
-        if(!error) { alert("Status da Nota Fiscal atualizado!"); carregarDados(); buscarProdutosGarantia(); }
+        const nf = document.getElementById('searchNF').value;
+        await _supabase.from('estoque_reverso').update({ retornado: true }).eq('nota_garantia', nf);
+        alert("Nota Baixada!"); carregarDados();
     }
 
-    function gerarRelatorio(tipo) {
-        const fl = document.getElementById('fLoja').value;
-        const fs = document.getElementById('fStatus').value;
-        const filtrados = estoque.filter(i => (fl==='TODAS'||i.loja===fl) && (fs==='TODOS'||i.status===fs));
+    function atualizarSparklines() {
+        // Lógica simplificada para os mini gráficos de relatórios
+        const r = estoque.filter(x => x.status === 'Reestoque').length;
+        const p = estoque.filter(x => x.status === 'Perda Total').length;
+        
+        if(charts.s1) charts.s1.destroy();
+        charts.s1 = new Chart(document.getElementById('sparklineRecuperacao'), {
+            type: 'line',
+            data: { labels: [1,2,3,4,5], datasets: [{ data: [0, r*0.5, r*0.8, r, r], borderColor: '#10b981', fill: true, backgroundColor: 'rgba(16, 185, 129, 0.1)' }] },
+            options: { plugins: { legend: false }, scales: { x: { display: false }, y: { display: false } } }
+        });
 
-        if(tipo === 'EXCEL') {
-            const ws = XLSX.utils.json_to_sheet(filtrados);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Dados");
-            XLSX.writeFile(wb, "Relatorio_Auditoria.xlsx");
-        } else {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            doc.text("Auditoria Pro - Relatório de Movimentações", 14, 15);
-            const cols = ["Data", "SKU", "Produto", "Status", "Loja"];
-            const rows = filtrados.map(i => [new Date(i.created_at).toLocaleDateString(), i.sku, i.nome, i.status, i.loja]);
-            doc.autoTable({ head:[cols], body:rows, startY:22, theme: 'striped' });
-            doc.save("Relatorio_Auditoria.pdf");
-        }
+        if(charts.s2) charts.s2.destroy();
+        charts.s2 = new Chart(document.getElementById('sparklinePerda'), {
+            type: 'line',
+            data: { labels: [1,2,3,4,5], datasets: [{ data: [0, p*0.2, p*0.6, p*0.9, p], borderColor: '#ef4444', fill: true, backgroundColor: 'rgba(239, 68, 68, 0.1)' }] },
+            options: { plugins: { legend: false }, scales: { x: { display: false }, y: { display: false } } }
+        });
     }
 
-    async function cadastrarGerente() {
-        const e = document.getElementById('newGerenteEmail').value;
-        const p = document.getElementById('newGerentePass').value;
-        const { error } = await _supabase.auth.signUp({ email: e, password: p });
-        if(error) alert("Erro ao criar conta."); else alert("Acesso Gerente criado!");
+    function atualizarTabelaGeral() {
+        document.getElementById('corpoRelatorio').innerHTML = estoque.map(i => `
+            <tr><td>${new Date(i.created_at).toLocaleDateString()}</td><td>${i.sku}</td><td>${i.status}</td><td>${i.retornado?'✅':'❌'}</td></tr>
+        `).join('');
+    }
+
+    function buscarNomePorSKU() {
+        const sku = document.getElementById('sku').value;
+        const p = estoque.find(i => i.sku === sku);
+        if(p) { document.getElementById('nome').value = p.nome; document.getElementById('custo').value = p.custo; document.getElementById('fornecedor').value = p.fornecedor; }
     }
 </script>
 </body>
