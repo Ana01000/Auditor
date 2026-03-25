@@ -3,206 +3,753 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SISTEMA AUDITORIA MASTER</title>
+    <title>AUDITOR DE ESTOQUE REVERSO PRO</title>
+    
+    <!-- CSS: Bootstrap 5, Google Fonts, Font Awesome -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- JS: Supabase, Chart.js, html2pdf -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
     <style>
-        :root { --blue: #0056b3; --green: #10b981; --orange: #f59e0b; --red: #ef4444; --bg: #f1f5f9; }
-        body { background: var(--bg); font-family: 'Inter', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        .card-custom { background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .nav-tabs-custom { background: #fff; padding: 10px; display: flex; gap: 8px; border-bottom: 1px solid #ddd; overflow-x: auto; }
-        .tab-item { padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid #ddd; color: #666; white-space: nowrap; }
-        .tab-item.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+        /* ========== VARIÁVEIS DE DESIGN PREMIUM ========== */
+        :root {
+            --primary: #0D47A1;
+            --primary-light: #E3F2FD;
+            --success: #2E7D32;
+            --success-light: #E8F5E9;
+            --warning: #F57C00;
+            --warning-light: #FFF3E0;
+            --danger: #C62828;
+            --danger-light: #FFEBEE;
+            --light-bg: #F8FAFB;
+            --card-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            --card-shadow-hover: 0 10px 25px rgba(0, 0, 0, 0.1);
+            --border-radius: 12px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--light-bg);
+            color: #333;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+
+        /* ========== TELA DE LOGIN ========== */
+        #loginScreen {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #F8FAFB 0%, #E3F2FD 100%);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 3rem;
+            box-shadow: var(--card-shadow-hover);
+            border-top: 6px solid var(--primary);
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ========== HEADER ========== */
+        header {
+            background: white;
+            padding: 1.25rem 2rem;
+            border-bottom: 1px solid #E0E0E0;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h3 { font-size: 1.4rem; color: var(--primary); margin: 0; }
+
+        /* ========== NAVEGAÇÃO EM PÍLULAS ========== */
+        .nav-pills { gap: 0.5rem; margin-bottom: 2rem; }
+        .nav-pills .nav-link {
+            background-color: white;
+            color: #666;
+            border-radius: 25px;
+            padding: 0.6rem 1.4rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: var(--transition);
+            border: 1px solid #E0E0E0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-pills .nav-link:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .nav-pills .nav-link.active {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(13, 71, 161, 0.2);
+        }
+
+        /* ========== CARDS ========== */
+        .card-pro {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            box-shadow: var(--card-shadow);
+            transition: var(--transition);
+            border: none;
+            height: 100%;
+        }
+
+        .card-pro:hover {
+            box-shadow: var(--card-shadow-hover);
+            transform: translateY(-4px);
+        }
+
+        /* ========== KPI CARDS ========== */
+        .kpi-card { text-align: center; padding: 1.5rem 0; }
+        .kpi-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #888; letter-spacing: 1.2px; }
+        .kpi-value { font-family: 'Poppins', sans-serif; font-size: 2.6rem; font-weight: 700; margin: 0.5rem 0; line-height: 1; }
+        
+        .border-success-left { border-left: 5px solid var(--success) !important; }
+        .border-warning-left { border-left: 5px solid var(--warning) !important; }
+        .border-danger-left { border-left: 5px solid var(--danger) !important; }
+
+        /* ========== BADGES DE STATUS ========== */
+        .badge-status {
+            padding: 0.4rem 0.8rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-family: 'Poppins', sans-serif;
+        }
+        .badge-reestoque { background-color: var(--success-light); color: var(--success); }
+        .badge-garantia { background-color: var(--warning-light); color: var(--warning); }
+        .badge-perda { background-color: var(--danger-light); color: var(--danger); }
+
+        /* ========== TABELAS ========== */
+        .table-container { overflow-x: auto; border-radius: 8px; }
+        .table thead th {
+            background-color: #F1F5F9;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            padding: 1rem;
+            border: none;
+        }
+        .table tbody td { padding: 1rem; vertical-align: middle; border-bottom: 1px solid #F1F5F9; font-size: 0.9rem; }
+
+        /* ========== FORMULÁRIOS ========== */
+        .form-control, .form-select {
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(13, 71, 161, 0.1);
+        }
+        .form-label { font-weight: 600; font-size: 0.85rem; color: #475569; margin-bottom: 0.5rem; }
+
+        /* ========== BOTÕES ========== */
+        .btn-primary { background-color: var(--primary); border: none; font-weight: 700; padding: 0.8rem 1.5rem; border-radius: 8px; }
+        .btn-primary:hover { background-color: #0A3A8A; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(13, 71, 161, 0.3); }
+
+        /* ========== RELATÓRIOS ========== */
+        .relatorio-buttons { display: flex; gap: 0.5rem; margin-bottom: 2rem; flex-wrap: wrap; }
+        .relatorio-btn {
+            padding: 0.8rem 1.2rem;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            background: white;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .relatorio-btn.active { background-color: var(--primary); color: white; border-color: var(--primary); }
+        .relatorio-btn:hover:not(.active) { border-color: var(--primary); color: var(--primary); }
+
+        .stat-box { display: flex; gap: 1.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+        .stat-item { background: var(--primary-light); padding: 1rem 1.5rem; border-radius: 8px; flex: 1; min-width: 150px; }
+        .stat-label { font-size: 0.7rem; font-weight: 700; color: var(--primary); text-transform: uppercase; }
+        .stat-value { font-size: 1.4rem; font-weight: 700; color: #1E293B; margin-top: 0.25rem; }
+
+        /* ========== UTILITÁRIOS ========== */
         .hidden { display: none !important; }
-        .content { flex: 1; padding: 20px; overflow-y: auto; }
+        .tab-content { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media (max-width: 768px) {
+            header { padding: 1rem; flex-direction: column; gap: 1rem; }
+            .nav-pills { flex-direction: column; width: 100%; }
+            .nav-pills .nav-link { width: 100%; justify-content: center; }
+            .kpi-value { font-size: 2rem; }
+        }
     </style>
 </head>
 <body>
 
-<div id="loginScreen" style="position:fixed; inset:0; background:#fff; z-index:10000; display:flex; align-items:center; justify-content:center;">
-    <div class="card-custom" style="width: 320px;">
-        <h5 class="text-center fw-800 mb-4">AUDITORIA LOGÍSTICA</h5>
-        <input type="email" id="email" class="form-control mb-2" placeholder="Seu e-mail">
-        <input type="password" id="pass" class="form-control mb-3" placeholder="Sua senha">
-        <button class="btn btn-primary w-100 fw-bold" onclick="authLogin()">ENTRAR</button>
+<!-- TELA DE LOGIN -->
+<div id="loginScreen">
+    <div class="login-card">
+        <h4 class="text-center">Auditor <span style="color: #666;">Reverso</span></h4>
+        <p class="subtitle text-center">Logística Reversa Profissional</p>
+        <div class="mb-3">
+            <label class="form-label">E-mail</label>
+            <input type="email" id="email" class="form-control" placeholder="seu@email.com">
+        </div>
+        <div class="mb-4">
+            <label class="form-label">Senha</label>
+            <input type="password" id="pass" class="form-control" placeholder="••••••••">
+        </div>
+        <button class="btn btn-primary w-100 py-3" onclick="authLogin()">ACESSAR SISTEMA</button>
     </div>
 </div>
 
+<!-- APP PRINCIPAL -->
 <div id="app" class="hidden">
-    <div class="nav-tabs-custom">
-        <div class="tab-item active" onclick="nav('dash', this)">📊 Dashboard</div>
-        <div class="tab-item" onclick="nav('reg', this)">✍️ Registrar Entrada</div>
-        <div class="tab-item" onclick="nav('gar', this)">⏳ Garantias/Pendências</div>
-        <div class="tab-item" onclick="nav('rel', this)">📈 Relatório SKU</div>
-        <div class="tab-item" onclick="nav('config', this)">⚙️ Config/Acessos</div>
-        <div class="tab-item ms-auto text-danger" onclick="logout()">Sair</div>
-    </div>
-
-    <main class="content">
-        <div id="tab-dash" class="tab-content">
-            <div class="row g-3 mb-4">
-                <div class="col-4"><div class="card-custom text-center"> <small>REESTOQUE</small> <h2 id="k-r">0</h2> </div></div>
-                <div class="col-4"><div class="card-custom text-center"> <small>GARANTIA</small> <h2 id="k-g">0</h2> </div></div>
-                <div class="col-4"><div class="card-custom text-center"> <small>PERDA</small> <h2 id="k-p">0</h2> </div></div>
-            </div>
-            <div class="row g-3">
-                <div class="col-md-6"><div class="card-custom"><h6>Status de Itens</h6><canvas id="c-donut"></canvas></div></div>
-                <div class="col-md-6"><div class="card-custom"><h6>Volume Mensal</h6><canvas id="c-bar"></canvas></div></div>
-            </div>
+    <header>
+        <h3>AUDITOR <span style="color: #666;">ESTOQUE REVERSO</span></h3>
+        <div class="d-flex align-items-center gap-3">
+            <span id="user-email" class="text-muted small fw-600"></span>
+            <button class="btn btn-sm btn-outline-danger" onclick="logout()">Sair</button>
         </div>
+    </header>
 
-        <div id="tab-reg" class="tab-content hidden">
-            <div class="card-custom mx-auto" style="max-width: 500px;">
-                <h5 class="fw-bold mb-3">Novo Registro</h5>
-                <input type="text" id="r-sku" class="form-control mb-2" placeholder="SKU do Produto">
-                <input type="text" id="r-id" class="form-control mb-2" placeholder="ID do Pedido">
-                <select id="r-loja" class="form-select mb-2">
-                    <option>Mercado Livre</option><option>Shopee</option><option>Site</option>
-                </select>
-                <select id="r-status" class="form-select mb-2">
-                    <option value="Garantia">Enviar para Garantia</option>
-                    <option value="Reestoque">Reestoque Direto</option>
-                    <option value="Perda Total">Perda Total</option>
-                </select>
-                <select id="r-motivo" class="form-select mb-3">
-                    <option>Arrependimento</option><option>Defeito</option><option>Avaria</option>
-                </select>
-                <button class="btn btn-primary w-100 py-3 fw-bold" onclick="save()">SALVAR NO BANCO</button>
+    <div class="container-fluid px-4 pb-5">
+        <!-- NAVEGAÇÃO -->
+        <ul class="nav nav-pills mb-4" id="pills-tab">
+            <li class="nav-item"><button class="nav-link active" onclick="nav('dash', this)"><i class="fas fa-chart-pie"></i> Dashboard</button></li>
+            <li class="nav-item"><button class="nav-link" onclick="nav('relatorios', this)"><i class="fas fa-file-alt"></i> Relatórios</button></li>
+            <li class="nav-item"><button class="nav-link" onclick="nav('nf-garantia', this)"><i class="fas fa-search"></i> Consultar NF</button></li>
+            <li class="nav-item"><button class="nav-link" onclick="nav('reg', this)"><i class="fas fa-plus-circle"></i> Registrar</button></li>
+            <li class="nav-item"><button class="nav-link" onclick="nav('gar', this)"><i class="fas fa-clock"></i> Pendências</button></li>
+            <li class="nav-item"><button class="nav-link" onclick="nav('func', this)"><i class="fas fa-users"></i> Equipe</button></li>
+        </ul>
+
+        <main>
+            <!-- TAB: DASHBOARD -->
+            <div id="tab-dash" class="tab-content">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="card-pro border-success-left">
+                            <div class="kpi-card">
+                                <div class="kpi-label">Reestoque</div>
+                                <div class="kpi-value" style="color: var(--success);" id="k-r">0</div>
+                                <div class="text-muted small">Itens recuperados</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card-pro border-warning-left">
+                            <div class="kpi-card">
+                                <div class="kpi-label">Garantia</div>
+                                <div class="kpi-value" style="color: var(--warning);" id="k-g">0</div>
+                                <div class="text-muted small">Itens em processamento</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card-pro border-danger-left">
+                            <div class="kpi-card">
+                                <div class="kpi-label">Perda Total</div>
+                                <div class="kpi-value" style="color: var(--danger);" id="k-p">0</div>
+                                <div class="text-muted small">Itens perdidos</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-lg-8">
+                        <div class="card-pro">
+                            <h6 class="section-title">Volume de Movimentações</h6>
+                            <div style="height: 350px;"><canvas id="c-bar"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="card-pro">
+                            <h6 class="section-title">Distribuição Geral</h6>
+                            <div style="height: 350px;"><canvas id="c-donut"></canvas></div>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
 
-        <div id="tab-gar" class="tab-content hidden">
-            <div class="card-custom">
-                <h6>Itens em Aberto</h6>
-                <table class="table mt-3">
-                    <thead><tr><th>SKU</th><th>LOJA</th><th>STATUS</th><th>AÇÃO</th></tr></thead>
-                    <tbody id="t-gar"></tbody>
-                </table>
+            <!-- TAB: RELATÓRIOS -->
+            <div id="tab-relatorios" class="tab-content hidden">
+                <div class="card-pro mb-4">
+                    <h6 class="section-title">Filtros Avançados</h6>
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label">Data Inicial</label>
+                            <input type="date" id="f-data-inicio" class="form-control" onchange="atualizarRelatorio()">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Data Final</label>
+                            <input type="date" id="f-data-fim" class="form-control" onchange="atualizarRelatorio()">
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-outline-secondary w-100" onclick="limparFiltros()">Limpar Filtros</button>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-success w-100" onclick="exportarPDF()"><i class="fas fa-file-pdf"></i> Exportar PDF</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="relatorio-buttons">
+                    <button class="relatorio-btn active" onclick="tipoRel('garantia', this)">Garantia</button>
+                    <button class="relatorio-btn" onclick="tipoRel('reestoque', this)">Reestoque</button>
+                    <button class="relatorio-btn" onclick="tipoRel('perda', this)">Perda Total</button>
+                    <button class="relatorio-btn" onclick="tipoRel('motivo', this)">Motivo</button>
+                    <button class="relatorio-btn" onclick="tipoRel('sku', this)">Por SKU</button>
+                </div>
+
+                <div id="rel-render" class="tab-content">
+                    <!-- Conteúdo dinâmico -->
+                </div>
             </div>
-        </div>
 
-        <div id="tab-rel" class="tab-content hidden">
-            <div class="card-custom">
-                <div class="d-flex justify-content-between mb-3">
-                    <h6>Análise por SKU</h6>
+            <!-- TAB: CONSULTAR NF -->
+            <div id="tab-nf-garantia" class="tab-content hidden">
+                <div class="card-pro mb-4">
+                    <h6 class="section-title">Buscar Nota Fiscal de Garantia</h6>
                     <div class="d-flex gap-2">
-                        <input type="date" id="d-ini" class="form-control form-control-sm">
-                        <input type="date" id="d-fim" class="form-control form-control-sm">
-                        <button class="btn btn-sm btn-dark" onclick="loadRel()">Gerar</button>
+                        <input type="text" id="q-nf" class="form-control" placeholder="Digite o número da NF de Garantia...">
+                        <button class="btn btn-primary px-4" onclick="buscarNF()">BUSCAR</button>
                     </div>
                 </div>
-                <table class="table table-sm">
-                    <thead><tr><th>SKU</th><th>REESTOQUE</th><th>GARANTIA</th><th>PERDA</th></tr></thead>
-                    <tbody id="t-rel"></tbody>
-                </table>
-            </div>
-        </div>
 
-        <div id="tab-config" class="tab-content hidden">
-            <div class="card-custom">
-                <h5>Configuração de Usuários</h5>
-                <p class="text-muted small">Gerencie quem pode acessar os relatórios.</p>
-                <hr>
-                <div class="row g-2">
-                    <div class="col-8"><input type="text" id="c-email" class="form-control" placeholder="E-mail do novo acesso"></div>
-                    <div class="col-4">
-                        <select id="c-role" class="form-select">
-                            <option value="auditor">Auditor</option>
-                            <option value="gerente">Gerente</option>
-                        </select>
+                <div id="nf-info" class="hidden">
+                    <div class="card-pro mb-4 border-primary-left" style="background: var(--primary-light);">
+                        <div class="row text-center">
+                            <div class="col-md-4">
+                                <div class="stat-label">NF GARANTIA</div>
+                                <div class="stat-value" id="nf-val"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stat-label">TOTAL PRODUTOS</div>
+                                <div class="stat-value" id="nf-count"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stat-label">DATA CRIAÇÃO</div>
+                                <div class="stat-value" id="nf-date"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-pro">
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>SKU</th>
+                                        <th>Produto</th>
+                                        <th>NF Cliente</th>
+                                        <th>Plataforma</th>
+                                        <th>Motivo</th>
+                                        <th>Custo Unit.</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="nf-table"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
-                <button class="btn btn-outline-primary mt-3 w-100" onclick="addUser()">Adicionar Permissão</button>
-                <div id="user-list" class="mt-4 small"></div>
             </div>
-        </div>
-    </main>
+
+            <!-- TAB: REGISTRAR -->
+            <div id="tab-reg" class="tab-content hidden">
+                <div class="card-pro mx-auto" style="max-width: 800px;">
+                    <h5 class="section-title text-center mb-4">Novo Registro de Devolução</h5>
+                    <form onsubmit="save(event)">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-12">
+                                <label class="form-label">SKU do Produto *</label>
+                                <input type="text" id="r-sku" class="form-control" placeholder="Digite o SKU..." onblur="findProd()" required>
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-8">
+                                <label class="form-label">Nome do Produto *</label>
+                                <input type="text" id="r-nome" class="form-control" placeholder="Nome automático..." required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Custo Unitário (R$) *</label>
+                                <input type="number" id="r-custo" class="form-control" placeholder="0.00" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">NF Cliente (ID Venda) *</label>
+                                <input type="text" id="r-id" class="form-control" placeholder="Número da NF do cliente..." required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Plataforma *</label>
+                                <select id="r-loja" class="form-select" required>
+                                    <option value="">Selecione...</option>
+                                    <option>Mercado Livre</option>
+                                    <option>Shopee</option>
+                                    <option>Site Próprio</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">Status (Destino) *</label>
+                                <select id="r-status" class="form-select" onchange="toggleNFG()" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="Garantia">Garantia</option>
+                                    <option value="Reestoque">Reestoque</option>
+                                    <option value="Perda Total">Perda Total</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Motivo da Devolução *</label>
+                                <select id="r-motivo" class="form-select" required>
+                                    <option value="">Selecione...</option>
+                                    <option>Arrependimento</option>
+                                    <option>Defeito</option>
+                                    <option>Avaria</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="nfg-box" class="mb-4 hidden">
+                            <label class="form-label">Número da NF de Garantia *</label>
+                            <input type="text" id="r-nfg" class="form-control" placeholder="Digite a NF de Garantia...">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 py-3 shadow">SALVAR NO BANCO DE DADOS</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- TAB: PENDÊNCIAS -->
+            <div id="tab-gar" class="tab-content hidden">
+                <div class="card-pro">
+                    <h6 class="section-title">Itens Pendentes (Garantia e Perda)</h6>
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>SKU</th>
+                                    <th>Produto</th>
+                                    <th>Plataforma</th>
+                                    <th>Status</th>
+                                    <th>NF Garantia</th>
+                                    <th class="text-end">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="t-gar"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: EQUIPE -->
+            <div id="tab-func" class="tab-content hidden">
+                <div class="card-pro mx-auto" style="max-width: 800px;">
+                    <h6 class="section-title">Adicionar Novo Membro</h6>
+                    <div class="row g-2 mb-5">
+                        <div class="col-md-7"><input type="email" id="f-email" class="form-control" placeholder="E-mail do colaborador"></div>
+                        <div class="col-md-3"><select id="f-role" class="form-select"><option value="auditor">Auditor</option><option value="gerente">Gerente</option></select></div>
+                        <div class="col-md-2"><button class="btn btn-dark w-100" onclick="addFunc()">+</button></div>
+                    </div>
+                    <h6 class="section-title">Equipe Cadastrada</h6>
+                    <div class="table-container">
+                        <table class="table">
+                            <thead><tr><th>E-mail</th><th>Cargo</th><th class="text-end">Ação</th></tr></thead>
+                            <tbody id="t-func"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
 </div>
 
+<!-- SCRIPTS DE LÓGICA -->
 <script>
     const SURL = "https://felxwahypthusgkspnbo.supabase.co";
     const SKEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlbHh3YWh5cHRodXNna3NwbmJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNTk2MTYsImV4cCI6MjA4OTkzNTYxNn0.ZwO_RbL2h5vuU-PbgEpKorGWOr_DLJ8fxr-t07pdIJs";
     const _s = supabase.createClient(SURL, SKEY);
-    let chartD, chartB;
 
+    let cBar, cDonut, cRel;
+    let curRel = 'garantia';
+
+    // AUTH
     async function authLogin() {
-        const { data, error } = await _s.auth.signInWithPassword({ 
-            email: document.getElementById('email').value, 
-            password: document.getElementById('pass').value 
-        });
-        if(error) alert("Erro!"); else location.reload();
+        const email = document.getElementById('email').value;
+        const pass = document.getElementById('pass').value;
+        const { data, error } = await _s.auth.signInWithPassword({ email, password: pass });
+        if(error) alert("Erro: " + error.message); else init();
     }
 
-    _s.auth.getSession().then(({data:{session}}) => { if(session) init(session.user); });
+    _s.auth.getSession().then(({data:{session}}) => { if(session) init(); });
 
-    function init(user) {
+    function init() {
         document.getElementById('loginScreen').classList.add('hidden');
         document.getElementById('app').classList.remove('hidden');
+        _s.auth.getUser().then(({data:{user}}) => { document.getElementById('user-email').innerText = user.email; });
         loadDash();
     }
 
+    // NAVEGAÇÃO
     function nav(id, el) {
-        document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
         el.classList.add('active');
         document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
         document.getElementById('tab-'+id).classList.remove('hidden');
         if(id === 'dash') loadDash();
+        if(id === 'relatorios') atualizarRelatorio();
         if(id === 'gar') loadGar();
-        if(id === 'rel') loadRel();
+        if(id === 'func') loadFunc();
     }
 
+    // DASHBOARD
     async function loadDash() {
         const { data } = await _s.from('estoque_reverso').select('status');
         const r = data.filter(x => x.status === 'Reestoque').length;
         const g = data.filter(x => x.status === 'Garantia').length;
         const p = data.filter(x => x.status === 'Perda Total').length;
+
         document.getElementById('k-r').innerText = r;
         document.getElementById('k-g').innerText = g;
         document.getElementById('k-p').innerText = p;
 
-        if(chartD) chartD.destroy();
-        chartD = new Chart(document.getElementById('c-donut'), {
-            type: 'doughnut', data: { labels: ['R','G','P'], datasets: [{ data: [r,g,p], backgroundColor: ['#10b981','#f59e0b','#ef4444'] }] }
+        if(cBar) cBar.destroy();
+        if(cDonut) cDonut.destroy();
+
+        cBar = new Chart(document.getElementById('c-bar'), {
+            type: 'bar',
+            data: { labels: ['Reestoque', 'Garantia', 'Perda'], datasets: [{ data: [r, g, p], backgroundColor: ['#2E7D32', '#F57C00', '#C62828'], borderRadius: 6 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+
+        cDonut = new Chart(document.getElementById('c-donut'), {
+            type: 'doughnut',
+            data: { labels: ['Reestoque', 'Garantia', 'Perda'], datasets: [{ data: [r, g, p], backgroundColor: ['#2E7D32', '#F57C00', '#C62828'], borderWidth: 0 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, cutout: '70%' }
         });
     }
 
-    async function save() {
-        const obj = { sku: document.getElementById('r-sku').value, id_pedido: document.getElementById('r-id').value, loja: document.getElementById('r-loja').value, status: document.getElementById('r-status').value, motivo: document.getElementById('r-motivo').value };
-        const { error } = await _s.from('estoque_reverso').insert([obj]);
-        if(!error) { alert("Salvo!"); loadDash(); }
+    // RELATÓRIOS
+    function tipoRel(t, el) {
+        curRel = t;
+        document.querySelectorAll('.relatorio-btn').forEach(b => b.classList.remove('active'));
+        el.classList.add('active');
+        atualizarRelatorio();
     }
 
+    async function atualizarRelatorio() {
+        const { data: regs } = await _s.from('estoque_reverso').select('*');
+        const { data: cat } = await _s.from('produtos_catalogo').select('*');
+        const catMap = {}; cat.forEach(p => catMap[p.sku] = p);
+
+        const dIn = document.getElementById('f-data-inicio').value;
+        const dFim = document.getElementById('f-data-fim').value;
+
+        const filtered = regs.filter(i => {
+            const dt = i.created_at.split('T')[0];
+            if(dIn && dt < dIn) return false;
+            if(dFim && dt > dFim) return false;
+            return true;
+        });
+
+        let html = '';
+        if(curRel === 'garantia') html = renderTable(filtered.filter(x => x.status === 'Garantia'), catMap, 'Garantia');
+        if(curRel === 'reestoque') html = renderTable(filtered.filter(x => x.status === 'Reestoque'), catMap, 'Reestoque');
+        if(curRel === 'perda') html = renderTable(filtered.filter(x => x.status === 'Perda Total'), catMap, 'Perda Total');
+        if(curRel === 'motivo') html = renderMotivo(filtered, catMap);
+        if(curRel === 'sku') html = renderSKU(filtered, catMap);
+
+        document.getElementById('rel-render').innerHTML = html;
+        renderRelChart(filtered);
+    }
+
+    function renderTable(data, cat, title) {
+        let rows = '';
+        data.forEach(i => {
+            const p = cat[i.sku] || {};
+            rows += `<tr><td>${i.sku}</td><td>${p.nome || '-'}</td><td>${i.id_pedido}</td><td>${i.loja}</td><td>${i.motivo}</td><td>${new Date(i.created_at).toLocaleDateString()}</td></tr>`;
+        });
+        return `<div class="card-pro"><h6>${title}</h6><div class="table-container"><table class="table"><thead><tr><th>SKU</th><th>Produto</th><th>NF Cliente</th><th>Loja</th><th>Motivo</th><th>Data</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+    }
+
+    function renderMotivo(data, cat) {
+        const m = {}; data.forEach(i => { m[i.motivo] = (m[i.motivo] || 0) + 1; });
+        let items = ''; for(let k in m) items += `<div class="stat-item"><div class="stat-label">${k}</div><div class="stat-value">${m[k]}</div></div>`;
+        return `<div class="stat-box">${items}</div><div class="card-pro"><div style="height:300px"><canvas id="c-rel"></canvas></div></div>`;
+    }
+
+    function renderSKU(data, cat) {
+        const s = {}; data.forEach(i => {
+            if(!s[i.sku]) s[i.sku] = { t:0, r:0, g:0, p:0, n:cat[i.sku]?.nome || '-' };
+            s[i.sku].t++;
+            if(i.status === 'Reestoque') s[i.sku].r++;
+            if(i.status === 'Garantia') s[i.sku].g++;
+            if(i.status === 'Perda Total') s[i.sku].p++;
+        });
+        const sorted = Object.entries(s).sort((a,b) => b[1].t - a[1].t);
+        let rows = ''; sorted.forEach(([k,v]) => {
+            rows += `<tr><td>${k}</td><td>${v.n}</td><td class="fw-bold">${v.t}</td><td>${v.r}</td><td>${v.g}</td><td>${v.p}</td></tr>`;
+        });
+        return `<div class="card-pro"><div class="table-container"><table class="table"><thead><tr><th>SKU</th><th>Produto</th><th>Total</th><th>R</th><th>G</th><th>P</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+    }
+
+    function renderRelChart(data) {
+        if(cRel) cRel.destroy();
+        const ctx = document.getElementById('c-rel');
+        if(!ctx) return;
+        const m = {}; data.forEach(i => { m[i.motivo] = (m[i.motivo] || 0) + 1; });
+        cRel = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: Object.keys(m), datasets: [{ data: Object.values(m), backgroundColor: '#0D47A1', borderRadius: 6 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+    }
+
+    // NF BUSCA
+    async function buscarNF() {
+        const nf = document.getElementById('q-nf').value;
+        if(!nf) return;
+        const { data } = await _s.from('estoque_reverso').select('*').eq('nf_garantia', nf);
+        if(!data.length) return alert("NF não encontrada!");
+        
+        const { data: cat } = await _s.from('produtos_catalogo').select('*');
+        const catMap = {}; cat.forEach(p => catMap[p.sku] = p);
+
+        document.getElementById('nf-val').innerText = nf;
+        document.getElementById('nf-count').innerText = data.length;
+        document.getElementById('nf-date').innerText = new Date(data[0].created_at).toLocaleDateString();
+        document.getElementById('nf-info').classList.remove('hidden');
+
+        let rows = '';
+        data.forEach(i => {
+            const p = catMap[i.sku] || {};
+            rows += `<tr><td>${i.sku}</td><td>${p.nome || '-'}</td><td>${i.id_pedido}</td><td>${i.loja}</td><td>${i.motivo}</td><td>R$ ${p.custo?.toFixed(2) || '0.00'}</td></tr>`;
+        });
+        document.getElementById('nf-table').innerHTML = rows;
+    }
+
+    // REGISTRO
+    async function findProd() {
+        const sku = document.getElementById('r-sku').value;
+        const { data } = await _s.from('produtos_catalogo').select('*').eq('sku', sku).single();
+        if(data) {
+            document.getElementById('r-nome').value = data.nome;
+            document.getElementById('r-custo').value = data.custo;
+        }
+    }
+
+    function toggleNFG() {
+        const s = document.getElementById('r-status').value;
+        document.getElementById('nfg-box').classList.toggle('hidden', s !== 'Garantia');
+    }
+
+    async function save(e) {
+        e.preventDefault();
+        const sku = document.getElementById('r-sku').value;
+        const nome = document.getElementById('r-nome').value;
+        const custo = parseFloat(document.getElementById('r-custo').value);
+        const status = document.getElementById('r-status').value;
+        const nfg = document.getElementById('r-nfg').value;
+
+        const { data: pExist } = await _s.from('produtos_catalogo').select('*').eq('sku', sku).single();
+        if(!pExist) await _s.from('produtos_catalogo').insert([{ sku, nome, custo }]);
+
+        const { error } = await _s.from('estoque_reverso').insert([{
+            sku, id_pedido: document.getElementById('r-id').value,
+            loja: document.getElementById('r-loja').value,
+            status, motivo: document.getElementById('r-motivo').value,
+            nf_garantia: status === 'Garantia' ? nfg : null
+        }]);
+
+        if(error) alert("Erro: " + error.message);
+        else { alert("Registrado!"); e.target.reset(); toggleNFG(); loadDash(); }
+    }
+
+    // PENDÊNCIAS
     async function loadGar() {
         const { data } = await _s.from('estoque_reverso').select('*').neq('status', 'Reestoque');
-        const t = document.getElementById('t-gar'); t.innerHTML = "";
+        const { data: cat } = await _s.from('produtos_catalogo').select('*');
+        const catMap = {}; cat.forEach(p => catMap[p.sku] = p);
+
+        const t = document.getElementById('t-gar'); t.innerHTML = '';
         data.forEach(i => {
-            t.innerHTML += `<tr><td>${i.sku}</td><td>${i.loja}</td><td>${i.status}</td><td><button class="btn btn-sm btn-success" onclick="baixa('${i.id}')">BAIXA</button></td></tr>`;
+            const p = catMap[i.sku] || {};
+            t.innerHTML += `<tr><td>${i.sku}</td><td>${p.nome || '-'}</td><td>${i.loja}</td><td><span class="badge-status ${i.status === 'Garantia' ? 'badge-garantia' : 'badge-perda'}">${i.status}</span></td><td>${i.nf_garantia || '-'}</td><td class="text-end"><button class="btn btn-sm btn-success" onclick="baixa('${i.id}')">BAIXAR</button></td></tr>`;
         });
     }
 
     async function baixa(id) {
         await _s.from('estoque_reverso').update({ status: 'Reestoque' }).eq('id', id);
-        loadGar();
+        loadGar(); loadDash();
     }
 
-    async function loadRel() {
-        const { data } = await _s.from('estoque_reverso').select('*');
-        const res = data.reduce((acc, i) => {
-            if(!acc[i.sku]) acc[i.sku] = { r:0, g:0, p:0 };
-            if(i.status === 'Reestoque') acc[i.sku].r++;
-            if(i.status === 'Garantia') acc[i.sku].g++;
-            if(i.status === 'Perda Total') acc[i.sku].p++;
-            return acc;
-        }, {});
-        const tr = document.getElementById('t-rel'); tr.innerHTML = "";
-        for(let s in res) {
-            tr.innerHTML += `<tr><td>${s}</td><td>${res[s].r}</td><td>${res[s].g}</td><td>${res[s].p}</td></tr>`;
-        }
+    // EQUIPE
+    async function loadFunc() {
+        const { data } = await _s.from('profiles').select('*');
+        const t = document.getElementById('t-func'); t.innerHTML = '';
+        data.forEach(f => {
+            t.innerHTML += `<tr><td>${f.email}</td><td><span class="badge-status badge-reestoque">${f.role}</span></td><td class="text-end"><button class="btn btn-sm text-danger" onclick="delFunc('${f.id}')"><i class="fas fa-trash"></i></button></td></tr>`;
+        });
     }
 
+    async function addFunc() {
+        const email = document.getElementById('f-email').value;
+        const role = document.getElementById('f-role').value;
+        await _s.from('profiles').insert([{ email, role }]);
+        loadFunc();
+    }
+
+    async function delFunc(id) {
+        if(confirm("Remover?")) { await _s.from('profiles').delete().eq('id', id); loadFunc(); }
+    }
+
+    // UTILS
     function logout() { _s.auth.signOut(); location.reload(); }
+    function limparFiltros() { document.getElementById('f-data-inicio').value = ''; document.getElementById('f-data-fim').value = ''; atualizarRelatorio(); }
+    function exportarPDF() {
+        const element = document.getElementById('rel-render');
+        const opt = { margin: 10, filename: 'relatorio-auditoria.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+        html2pdf().set(opt).from(element).save();
+    }
 </script>
 </body>
 </html>
