@@ -3,131 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SISTEMA AUDITORIA V1.3</title>
+    <title>SISTEMA AUDITORIA MASTER</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --blue: #0056b3; --green: #10b981; --orange: #f59e0b; --red: #ef4444; --bg: #f8fafc; }
+        :root { --blue: #0056b3; --green: #10b981; --orange: #f59e0b; --red: #ef4444; --bg: #f1f5f9; }
         body { background: var(--bg); font-family: 'Inter', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        .card-white { background: #fff; border-radius: 16px; border: 1px solid #e2e8f0; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
-        .nav-scroll { background: #fff; padding: 10px 20px; display: flex; gap: 10px; overflow-x: auto; border-bottom: 1px solid #e2e8f0; scrollbar-width: none; }
-        .tab-oval { padding: 8px 18px; border-radius: 50px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid #e2e8f0; color: #64748b; white-space: nowrap; transition: 0.2s; }
-        .tab-oval.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+        .card-custom { background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .nav-tabs-custom { background: #fff; padding: 10px; display: flex; gap: 8px; border-bottom: 1px solid #ddd; overflow-x: auto; }
+        .tab-item { padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid #ddd; color: #666; white-space: nowrap; }
+        .tab-item.active { background: var(--blue); color: #fff; border-color: var(--blue); }
         .hidden { display: none !important; }
-        .content-area { flex: 1; padding: 20px; overflow-y: auto; }
-        .btn-success { background-color: var(--green); border: none; }
+        .content { flex: 1; padding: 20px; overflow-y: auto; }
     </style>
 </head>
 <body>
 
-<div id="loginScreen" style="position:fixed; inset:0; background:#fff; z-index:9999; display:flex; align-items:center; justify-content:center;">
-    <div class="card-white" style="width: 350px;">
-        <h4 class="fw-800 text-center mb-4" style="color: var(--blue)">Auditoria Login</h4>
-        <input type="email" id="email" class="form-control mb-2" placeholder="E-mail">
-        <input type="password" id="pass" class="form-control mb-3" placeholder="Senha">
+<div id="loginScreen" style="position:fixed; inset:0; background:#fff; z-index:10000; display:flex; align-items:center; justify-content:center;">
+    <div class="card-custom" style="width: 320px;">
+        <h5 class="text-center fw-800 mb-4">AUDITORIA LOGÍSTICA</h5>
+        <input type="email" id="email" class="form-control mb-2" placeholder="Seu e-mail">
+        <input type="password" id="pass" class="form-control mb-3" placeholder="Sua senha">
         <button class="btn btn-primary w-100 fw-bold" onclick="authLogin()">ENTRAR</button>
     </div>
 </div>
 
 <div id="app" class="hidden">
-    <header style="background:#fff; padding:12px 20px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
-        <div class="fw-800 text-primary">AUDITOR PRO <small class="text-muted fw-normal">v1.3</small></div>
-        <div id="user-info" class="small fw-bold text-muted">---</div>
-    </header>
+    <div class="nav-tabs-custom">
+        <div class="tab-item active" onclick="nav('dash', this)">📊 Dashboard</div>
+        <div class="tab-item" onclick="nav('reg', this)">✍️ Registrar Entrada</div>
+        <div class="tab-item" onclick="nav('gar', this)">⏳ Garantias/Pendências</div>
+        <div class="tab-item" onclick="nav('rel', this)">📈 Relatório SKU</div>
+        <div class="tab-item" onclick="nav('config', this)">⚙️ Config/Acessos</div>
+        <div class="tab-item ms-auto text-danger" onclick="logout()">Sair</div>
+    </div>
 
-    <nav class="nav-scroll">
-        <div class="tab-oval active" id="btn-dashboard" onclick="nav('dashboard', this)">Dashboard</div>
-        <div class="tab-oval" id="btn-registro" onclick="nav('registro', this)">Registrar</div>
-        <div class="tab-oval" id="btn-garantia" onclick="nav('garantia', this)">Garantia</div>
-        <div class="tab-oval" id="btn-relatorios" onclick="nav('relatorios', this)">Relatórios por SKU</div>
-        <div class="tab-oval ms-auto text-danger" onclick="logout()">Sair</div>
-    </nav>
-
-    <main class="content-area">
-        <div id="tab-dashboard" class="tab-content">
-            <div class="row g-3 mb-4 text-center">
-                <div class="col-4"><div class="card-white border-bottom border-4 border-success"> <small class="fw-bold">REESTOQUE</small> <h3 id="k-r" class="m-0">0</h3> </div></div>
-                <div class="col-4"><div class="card-white border-bottom border-4 border-warning"> <small class="fw-bold">GARANTIA</small> <h3 id="k-g" class="m-0">0</h3> </div></div>
-                <div class="col-4"><div class="card-white border-bottom border-4 border-danger"> <small class="fw-bold">PERDA</small> <h3 id="k-p" class="m-0">0</h3> </div></div>
+    <main class="content">
+        <div id="tab-dash" class="tab-content">
+            <div class="row g-3 mb-4">
+                <div class="col-4"><div class="card-custom text-center"> <small>REESTOQUE</small> <h2 id="k-r">0</h2> </div></div>
+                <div class="col-4"><div class="card-custom text-center"> <small>GARANTIA</small> <h2 id="k-g">0</h2> </div></div>
+                <div class="col-4"><div class="card-custom text-center"> <small>PERDA</small> <h2 id="k-p">0</h2> </div></div>
             </div>
             <div class="row g-3">
-                <div class="col-md-6"><div class="card-white"><h6>Distribuição de Status</h6><canvas id="c-donut"></canvas></div></div>
-                <div class="col-md-6"><div class="card-white"><h6>Volume Total</h6><canvas id="c-bar"></canvas></div></div>
+                <div class="col-md-6"><div class="card-custom"><h6>Status de Itens</h6><canvas id="c-donut"></canvas></div></div>
+                <div class="col-md-6"><div class="card-custom"><h6>Volume Mensal</h6><canvas id="c-bar"></canvas></div></div>
             </div>
         </div>
 
-        <div id="tab-registro" class="tab-content hidden">
-            <div class="card-white mx-auto" style="max-width: 600px;">
-                <h5 class="fw-bold mb-3">Novo Registro de Entrada</h5>
-                <label class="small fw-bold">SKU</label>
-                <input type="text" id="r-sku" class="form-control mb-2" placeholder="Digite o SKU...">
-                <label class="small fw-bold">ID Pedido / NF</label>
-                <input type="text" id="r-id" class="form-control mb-3">
-                <div class="row g-2 mb-3">
-                    <div class="col-6">
-                        <label class="small fw-bold">Loja Origem</label>
-                        <select id="r-loja" class="form-select">
-                            <option>Mercado Livre</option><option>Shopee</option><option>Site</option>
-                        </select>
-                    </div>
-                    <div class="col-6">
-                        <label class="small fw-bold">Destino Inicial</label>
-                        <select id="r-status" class="form-select">
-                            <option value="Garantia">Garantia (Pendente)</option>
-                            <option value="Reestoque">Reestoque (Direto)</option>
-                            <option value="Perda Total">Perda Total</option>
-                        </select>
-                    </div>
-                </div>
-                <label class="small fw-bold">Motivo</label>
-                <select id="r-motivo" class="form-select mb-4">
+        <div id="tab-reg" class="tab-content hidden">
+            <div class="card-custom mx-auto" style="max-width: 500px;">
+                <h5 class="fw-bold mb-3">Novo Registro</h5>
+                <input type="text" id="r-sku" class="form-control mb-2" placeholder="SKU do Produto">
+                <input type="text" id="r-id" class="form-control mb-2" placeholder="ID do Pedido">
+                <select id="r-loja" class="form-select mb-2">
+                    <option>Mercado Livre</option><option>Shopee</option><option>Site</option>
+                </select>
+                <select id="r-status" class="form-select mb-2">
+                    <option value="Garantia">Enviar para Garantia</option>
+                    <option value="Reestoque">Reestoque Direto</option>
+                    <option value="Perda Total">Perda Total</option>
+                </select>
+                <select id="r-motivo" class="form-select mb-3">
                     <option>Arrependimento</option><option>Defeito</option><option>Avaria</option>
                 </select>
-                <button class="btn btn-primary w-100 py-3 fw-bold" onclick="save()">CONCLUIR REGISTRO</button>
+                <button class="btn btn-primary w-100 py-3 fw-bold" onclick="save()">SALVAR NO BANCO</button>
             </div>
         </div>
 
-        <div id="tab-garantia" class="tab-content hidden">
-            <div class="card-white">
-                <div class="d-flex justify-content-between mb-3 align-items-center">
-                    <h6 class="fw-bold m-0 text-primary">Aguardando Retorno da Garantia</h6>
-                    <input type="text" id="f-sku" class="form-control w-25 form-control-sm" placeholder="Buscar SKU..." onkeyup="filterGar()">
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-hover small">
-                        <thead class="table-light"><tr><th>DATA</th><th>SKU</th><th>LOJA</th><th>STATUS</th><th class="text-end">AÇÃO</th></tr></thead>
-                        <tbody id="t-gar"></tbody>
-                    </table>
-                </div>
+        <div id="tab-gar" class="tab-content hidden">
+            <div class="card-custom">
+                <h6>Itens em Aberto</h6>
+                <table class="table mt-3">
+                    <thead><tr><th>SKU</th><th>LOJA</th><th>STATUS</th><th>AÇÃO</th></tr></thead>
+                    <tbody id="t-gar"></tbody>
+                </table>
             </div>
         </div>
 
-        <div id="tab-relatorios" class="tab-content hidden">
-            <div class="card-white">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="fw-bold m-0">Performance por SKU (Mês Atual)</h6>
+        <div id="tab-rel" class="tab-content hidden">
+            <div class="card-custom">
+                <div class="d-flex justify-content-between mb-3">
+                    <h6>Análise por SKU</h6>
                     <div class="d-flex gap-2">
                         <input type="date" id="d-ini" class="form-control form-control-sm">
                         <input type="date" id="d-fim" class="form-control form-control-sm">
-                        <button class="btn btn-sm btn-primary px-3" onclick="loadRel()">Gerar</button>
+                        <button class="btn btn-sm btn-dark" onclick="loadRel()">Gerar</button>
                     </div>
                 </div>
                 <table class="table table-sm">
-                    <thead><tr class="text-muted"><th>SKU</th><th class="text-center">REESTOQUE</th><th class="text-center">GARANTIA</th><th class="text-center">PERDA</th></tr></thead>
+                    <thead><tr><th>SKU</th><th>REESTOQUE</th><th>GARANTIA</th><th>PERDA</th></tr></thead>
                     <tbody id="t-rel"></tbody>
                 </table>
             </div>
         </div>
 
-        <div id="tab-erro" class="tab-content hidden text-center py-5">
-            <div class="card-white mx-auto shadow-sm" style="max-width: 450px; border-top: 6px solid var(--red);">
-                <h1 class="display-4">🚫</h1>
-                <h4 class="fw-bold">Acesso Restrito</h4>
-                <p class="text-muted">Sua conta de <b>Auditor</b> não permite acessar relatórios gerenciais.</p>
-                <p class="small text-danger">Solicite permissão ao Gerente se necessário.</p>
-                <button class="btn btn-dark w-100 mt-3" onclick="nav('registro', document.getElementById('btn-registro'))">Ir para Registro de Itens</button>
+        <div id="tab-config" class="tab-content hidden">
+            <div class="card-custom">
+                <h5>Configuração de Usuários</h5>
+                <p class="text-muted small">Gerencie quem pode acessar os relatórios.</p>
+                <hr>
+                <div class="row g-2">
+                    <div class="col-8"><input type="text" id="c-email" class="form-control" placeholder="E-mail do novo acesso"></div>
+                    <div class="col-4">
+                        <select id="c-role" class="form-select">
+                            <option value="auditor">Auditor</option>
+                            <option value="gerente">Gerente</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn btn-outline-primary mt-3 w-100" onclick="addUser()">Adicionar Permissão</button>
+                <div id="user-list" class="mt-4 small"></div>
             </div>
         </div>
     </main>
@@ -137,84 +125,32 @@
     const SURL = "https://felxwahypthusgkspnbo.supabase.co";
     const SKEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlbHh3YWh5cHRodXNna3NwbmJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNTk2MTYsImV4cCI6MjA4OTkzNTYxNn0.ZwO_RbL2h5vuU-PbgEpKorGWOr_DLJ8fxr-t07pdIJs";
     const _s = supabase.createClient(SURL, SKEY);
-    let chartD, chartB, userRole = 'auditor';
+    let chartD, chartB;
 
     async function authLogin() {
         const { data, error } = await _s.auth.signInWithPassword({ 
             email: document.getElementById('email').value, 
             password: document.getElementById('pass').value 
         });
-        if(error) alert("Erro: Verifique seus dados."); else location.reload();
+        if(error) alert("Erro!"); else location.reload();
     }
 
     _s.auth.getSession().then(({data:{session}}) => { if(session) init(session.user); });
 
-    async function init(user) {
+    function init(user) {
         document.getElementById('loginScreen').classList.add('hidden');
         document.getElementById('app').classList.remove('hidden');
-        document.getElementById('user-info').innerText = user.email.toLowerCase();
-        
-        // Carrega Perfil
-        const { data } = await _s.from('profiles').select('role').eq('id', user.id).single();
-        userRole = data?.role || 'auditor';
-
-        // Esconde botões do menu se for auditor
-        if(userRole === 'auditor') {
-            document.getElementById('btn-dashboard').style.display = 'none';
-            document.getElementById('btn-relatorios').style.display = 'none';
-            nav('registro', document.getElementById('btn-registro'));
-        } else {
-            setDates();
-            loadDash();
-        }
-    }
-
-    function setDates() {
-        const d = new Date();
-        document.getElementById('d-ini').value = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0];
-        document.getElementById('d-fim').value = new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().split('T')[0];
+        loadDash();
     }
 
     function nav(id, el) {
-        if(userRole === 'auditor' && (id === 'dashboard' || id === 'relatorios')) id = 'erro';
-        
-        document.querySelectorAll('.tab-oval').forEach(t => t.classList.remove('active'));
-        if(el) el.classList.add('active');
+        document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+        el.classList.add('active');
         document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
         document.getElementById('tab-'+id).classList.remove('hidden');
-
-        if(id === 'dashboard') loadDash();
-        if(id === 'garantia') loadGar();
-        if(id === 'relatorios') loadRel();
-    }
-
-    // AUTO-COMPLETE SKU
-    document.getElementById('r-sku').addEventListener('blur', async function() {
-        if(!this.value) return;
-        const { data } = await _s.from('estoque_reverso').select('loja, motivo').eq('sku', this.value).order('created_at', {ascending: false}).limit(1);
-        if(data && data.length > 0) {
-            document.getElementById('r-loja').value = data[0].loja;
-            document.getElementById('r-motivo').value = data[0].motivo;
-        }
-    });
-
-    async function save() {
-        const sku = document.getElementById('r-sku').value;
-        const id_p = document.getElementById('r-id').value;
-        if(!sku || !id_p) return alert("Preencha SKU e Pedido!");
-
-        const { error } = await _s.from('estoque_reverso').insert([{
-            sku: sku, id_pedido: id_p,
-            loja: document.getElementById('r-loja').value,
-            status: document.getElementById('r-status').value,
-            motivo: document.getElementById('r-motivo').value
-        }]);
-
-        if(!error) {
-            alert("Registrado com sucesso!");
-            document.getElementById('r-sku').value = "";
-            document.getElementById('r-id').value = "";
-        }
+        if(id === 'dash') loadDash();
+        if(id === 'gar') loadGar();
+        if(id === 'rel') loadRel();
     }
 
     async function loadDash() {
@@ -222,43 +158,37 @@
         const r = data.filter(x => x.status === 'Reestoque').length;
         const g = data.filter(x => x.status === 'Garantia').length;
         const p = data.filter(x => x.status === 'Perda Total').length;
-        
         document.getElementById('k-r').innerText = r;
         document.getElementById('k-g').innerText = g;
         document.getElementById('k-p').innerText = p;
 
-        if(chartD) chartD.destroy(); if(chartB) chartB.destroy();
+        if(chartD) chartD.destroy();
         chartD = new Chart(document.getElementById('c-donut'), {
-            type: 'doughnut',
-            data: { labels:['Reestoque','Garantia','Perda'], datasets:[{data:[r,g,p], backgroundColor:['#10b981','#f59e0b','#ef4444']}] }
-        });
-        chartB = new Chart(document.getElementById('c-bar'), {
-            type: 'bar',
-            data: { labels:['R','G','P'], datasets:[{data:[r,g,p], backgroundColor:['#10b981','#f59e0b','#ef4444']}] },
-            options: { plugins:{legend:{display:false}} }
+            type: 'doughnut', data: { labels: ['R','G','P'], datasets: [{ data: [r,g,p], backgroundColor: ['#10b981','#f59e0b','#ef4444'] }] }
         });
     }
 
+    async function save() {
+        const obj = { sku: document.getElementById('r-sku').value, id_pedido: document.getElementById('r-id').value, loja: document.getElementById('r-loja').value, status: document.getElementById('r-status').value, motivo: document.getElementById('r-motivo').value };
+        const { error } = await _s.from('estoque_reverso').insert([obj]);
+        if(!error) { alert("Salvo!"); loadDash(); }
+    }
+
     async function loadGar() {
-        const { data } = await _s.from('estoque_reverso').select('*').neq('status', 'Reestoque').order('created_at', {ascending: false});
+        const { data } = await _s.from('estoque_reverso').select('*').neq('status', 'Reestoque');
         const t = document.getElementById('t-gar'); t.innerHTML = "";
         data.forEach(i => {
-            t.innerHTML += `<tr><td>${new Date(i.created_at).toLocaleDateString()}</td><td class="fw-bold">${i.sku}</td><td>${i.loja}</td><td><span class="badge ${i.status=='Garantia'?'bg-warning text-dark':'bg-danger'}">${i.status}</span></td><td class="text-end"><button class="btn btn-sm btn-success fw-bold" onclick="baixa('${i.id}')">RETORNOU</button></td></tr>`;
+            t.innerHTML += `<tr><td>${i.sku}</td><td>${i.loja}</td><td>${i.status}</td><td><button class="btn btn-sm btn-success" onclick="baixa('${i.id}')">BAIXA</button></td></tr>`;
         });
     }
 
     async function baixa(id) {
-        if(confirm("Confirmar retorno deste item para o estoque?")) {
-            await _s.from('estoque_reverso').update({ status: 'Reestoque' }).eq('id', id);
-            loadGar();
-        }
+        await _s.from('estoque_reverso').update({ status: 'Reestoque' }).eq('id', id);
+        loadGar();
     }
 
     async function loadRel() {
-        const ini = document.getElementById('d-ini').value;
-        const fim = document.getElementById('d-fim').value;
-        const { data } = await _s.from('estoque_reverso').select('*').gte('created_at', ini).lte('created_at', fim+'T23:59:59');
-        
+        const { data } = await _s.from('estoque_reverso').select('*');
         const res = data.reduce((acc, i) => {
             if(!acc[i.sku]) acc[i.sku] = { r:0, g:0, p:0 };
             if(i.status === 'Reestoque') acc[i.sku].r++;
@@ -266,21 +196,13 @@
             if(i.status === 'Perda Total') acc[i.sku].p++;
             return acc;
         }, {});
-
         const tr = document.getElementById('t-rel'); tr.innerHTML = "";
         for(let s in res) {
-            tr.innerHTML += `<tr><td class="fw-bold">${s}</td><td class="text-center text-success fw-bold">${res[s].r}</td><td class="text-center text-warning fw-bold">${res[s].g}</td><td class="text-center text-danger fw-bold">${res[s].p}</td></tr>`;
+            tr.innerHTML += `<tr><td>${s}</td><td>${res[s].r}</td><td>${res[s].g}</td><td>${res[s].p}</td></tr>`;
         }
     }
 
     function logout() { _s.auth.signOut(); location.reload(); }
-    
-    function filterGar() {
-        const val = document.getElementById('f-sku').value.toUpperCase();
-        document.querySelectorAll('#t-gar tr').forEach(tr => {
-            tr.style.display = tr.innerText.toUpperCase().includes(val) ? '' : 'none';
-        });
-    }
 </script>
 </body>
 </html>
